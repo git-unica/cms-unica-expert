@@ -1,0 +1,74 @@
+export interface User {
+  _id: string
+  username: string
+  full_name: string
+  email: string
+  avatar?: string
+  phone: string
+  bio?: string
+  ref?: string
+  roles?: string[]
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+}
+
+export interface Mail {
+  id: number
+  unread?: boolean
+  from: User
+  subject: string
+  body: string
+  date: string
+}
+
+export interface Member {
+  name: string
+  username: string
+  role: 'member' | 'owner'
+  avatar: string
+}
+
+export interface Notification {
+  id: number
+  unread?: boolean
+  sender: User
+  body: string
+  date: string
+}
+
+export type Period = 'daily' | 'weekly' | 'monthly'
+
+export interface Range {
+  start: Date
+  end: Date
+}
+
+export interface IMetaPaginate {
+  page: number
+  take: number
+  itemCount: number
+  pageCount: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+}
+
+export interface IResponsePagination<T> {
+  data: T[]
+  meta: IMetaPaginate
+}
+
+export interface IResponseLoginSuccess {
+  access_token: string
+  access_token_unica_id: string
+  data: User
+  refresh_token: string
+  status: number
+}
+
+export interface IResponseLoginFail {
+  data: {
+    message: string
+  }
+  status: number
+}
