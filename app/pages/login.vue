@@ -26,30 +26,47 @@ const validate = (state: any) => {
   if (!state.password) errors.push({ path: 'password', message: 'Mật khẩu không để trống' })
   return errors
 }
-const isLoading = ref(false)
+const config = useRuntimeConfig()
 const authStore = useAuthStore()
+const { accessToken } = storeToRefs(authStore)
+const username = ref()
+const password = ref()
+
+const { status, execute } = useFetch(`v1/auth/login`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${accessToken.value}`
+  },
+  baseURL: config.public.apiUrl,
+  immediate: false,
+  lazy: true,
+  body: { username, password },
+  onResponse: async ({ response }) => {
+    if (response.ok) {
+      authStore.setAccessToken(response._data.access_token)
+      authStore.setRefreshToken(response._data.refresh_token)
+      await authStore.getUserInfo()
+      await navigateTo('/')
+    }
+  },
+  onResponseError({ response }) {
+    Notify.failure(response._data?.message ?? 'Có lỗi khi đăng nhập')
+  }
+})
 
 const onLogin = async (data: { username: string, password: string }) => {
-  isLoading.value = true
-  const res = await useLogin(data.username, data.password)
-  if ('access_token' in res && 'refresh_token' in res) {
-    authStore.setAccessToken(res.access_token)
-    authStore.setRefreshToken(res.refresh_token)
-    await authStore.getUserInfo()
-    await navigateTo('/')
-  } else {
-    Notify.warning(res.data['message'] ?? 'Có lỗi khi đăng nhập')
-  }
-  isLoading.value = false
+  username.value = data.username
+  password.value = data.password
+  execute()
 }
 </script>
 
 <template>
-  <section class="h-dvh flex items-center">
+  <section class="h-dvh flex items-center px-2 md:px-0">
     <UAuthForm
       :fields="fields"
-      :loading="isLoading"
-      :submit-button="{ label: isLoading ? 'Đang xử lý' : 'Tiếp tục' }"
+      :loading="status === 'pending'"
+      :submit-button="{ label: status === 'pending' ? 'Đang xử lý' : 'Tiếp tục' }"
       :validate="validate"
       align="top"
       class="mx-auto"

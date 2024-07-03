@@ -2,6 +2,8 @@
 const { isHelpSlideoverOpen } = useDashboard()
 const { isDashboardSearchModalOpen } = useUIState()
 const { metaSymbol } = useShortcuts()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 
 const items = computed(() => [
   [{
@@ -20,12 +22,12 @@ const items = computed(() => [
       isDashboardSearchModalOpen.value = true
     }
   }, {
-    label: 'Help & Support',
+    label: 'Trợ giúp',
     icon: 'i-heroicons-question-mark-circle',
     shortcuts: ['?'],
     click: () => isHelpSlideoverOpen.value = true
   }], [{
-    label: 'Documentation',
+    label: 'Tài liệu',
     icon: 'i-heroicons-book-open',
     to: 'https://ui.nuxt.com/pro/getting-started',
     target: '_blank'
@@ -35,8 +37,12 @@ const items = computed(() => [
     to: 'https://github.com/nuxt-ui-pro/dashboard',
     target: '_blank'
   }], [{
-    label: 'Sign out',
-    icon: 'i-heroicons-arrow-left-on-rectangle'
+    label: 'Đăng xuất',
+    icon: 'i-heroicons-arrow-left-on-rectangle',
+    click: () => {
+      authStore.logout()
+      navigateTo('/login')
+    }
   }]
 ])
 </script>
@@ -52,15 +58,15 @@ const items = computed(() => [
     <template #default="{ open }">
       <UButton
         :class="[open && 'bg-gray-50 dark:bg-gray-800']"
+        :label="user.full_name"
         class="w-full"
         color="gray"
-        label="Benjamin"
         variant="ghost"
       >
         <template #leading>
           <UAvatar
+            :src="user.avatar"
             size="2xs"
-            src="https://avatars.githubusercontent.com/u/739984?v=4"
           />
         </template>
 
@@ -75,11 +81,8 @@ const items = computed(() => [
 
     <template #account>
       <div class="text-left">
-        <p>
-          Signed in as
-        </p>
         <p class="truncate font-medium text-gray-900 dark:text-white">
-          ben@nuxtlabs.com
+          {{ user.full_name }}
         </p>
       </div>
     </template>
