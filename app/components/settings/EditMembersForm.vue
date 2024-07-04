@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { FormError, FormSubmitEvent } from '#ui/types'
+import type { FormSubmitEvent } from '#ui/types'
 import type { Role, User } from '~/types'
 
 const config = useRuntimeConfig()
@@ -10,13 +10,7 @@ const emit = defineEmits(['close'])
 const props = defineProps<{ member: User, roles: Role[] }>()
 const member = ref(props.member)
 const selectRoles = computed(() => props.roles.map(role => ({ id: role._id, name: role.name })))
-
-// https://ui.nuxt.com/components/form
-const validate = (state: User): FormError[] => {
-  const errors = []
-  if (state.roles.length === 0) errors.push({ path: 'role', message: 'Vui lòng chọn ít nhất 1 vai trò' })
-  return errors
-}
+const requestRefreshMembers = ref(false)
 
 async function onSubmit(event: FormSubmitEvent<User>) {
   await $fetch(`/v1/users/${event.data._id}/roles`, {
@@ -28,22 +22,24 @@ async function onSubmit(event: FormSubmitEvent<User>) {
     headers: { Authorization: `Bearer ${accessToken.value}` },
     onResponse({ response }) {
       if (response.ok) {
-        toast.add({ title: 'Đã cập nhật thông tin thành công', color: 'green' })
+        if (event.data.roles.length === 0) {
+          requestRefreshMembers.value = true
+          toast.add({ title: `${event.data.full_name} đã không còn vai trò nào trong hệ thống`, color: 'green' })
+        } else
+          toast.add({ title: 'Đã cập nhật thông tin thành công', color: 'green' })
       } else {
         toast.add({ title: 'Cập nhật thông tin thất bại', color: 'red' })
       }
     }
   })
 
-  emit('close')
+  emit('close', requestRefreshMembers.value)
 }
 </script>
 
 <template>
   <UForm
     :state="member"
-    :validate="validate"
-    :validate-on="['submit']"
     class="space-y-4"
     @submit="onSubmit"
   >

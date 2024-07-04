@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { Role } from '~/types'
+import type { Role, User } from '~/types'
 import { ERole } from '~/enums/role.enum'
 
 const config = useRuntimeConfig()
@@ -7,6 +7,7 @@ const authStore = useAuthStore()
 const { accessToken } = storeToRefs(authStore)
 const q = ref()
 const isInviteModalOpen = ref(false)
+const haveNewMember = ref(false)
 
 const { data: roles } = useFetch<Role[]>('/v1/admin/roles/list', {
   baseURL: config.public.apiUrl,
@@ -14,6 +15,12 @@ const { data: roles } = useFetch<Role[]>('/v1/admin/roles/list', {
 })
 
 const managerRoles = computed(() => roles.value?.filter(role => Object.values(ERole).includes(role.name)))
+
+const onCloseInviteModal = (newUser?: User) => {
+  isInviteModalOpen.value = false
+
+  if (newUser) haveNewMember.value = true
+}
 </script>
 
 <template>
@@ -46,6 +53,7 @@ const managerRoles = computed(() => roles.value?.filter(role => Object.values(ER
         </template>
 
         <SettingsMembersList
+          :have-new-member="haveNewMember"
           :keyword="q"
           :roles="managerRoles"
         />
@@ -55,10 +63,13 @@ const managerRoles = computed(() => roles.value?.filter(role => Object.values(ER
     <UDashboardModal
       v-model="isInviteModalOpen"
       :ui="{ width: 'sm:max-w-md' }"
-      description="Invite new members by email address"
-      title="Invite people"
+      description="Mời nhân viên bằng địa chỉ email"
+      title="Mời nhân viên"
     >
-      <SettingsAddMembersForm @close="isInviteModalOpen = false" />
+      <SettingsAddMembersForm
+        :roles="managerRoles"
+        @close="onCloseInviteModal"
+      />
     </UDashboardModal>
   </UDashboardPanelContent>
 </template>

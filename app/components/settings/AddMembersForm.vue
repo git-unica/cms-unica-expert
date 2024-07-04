@@ -1,33 +1,75 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import type { FormError, FormSubmitEvent } from '#ui/types'
+import type { IResponsePagination, Role, User } from '~/types'
 
+const config = useRuntimeConfig()
+const authStore = useAuthStore()
+const { accessToken } = storeToRefs(authStore)
+const toast = useToast()
 const emit = defineEmits(['close'])
+const props = defineProps<{ roles: Role[] }>()
+
+const selectRoles = computed(() => props.roles.map(role => ({ id: role._id, name: role.name })))
 
 const state = reactive({
-  role: 'member',
+  roles: [],
   email: undefined
 })
 
 // https://ui.nuxt.com/components/form
 const validate = (state: any): FormError[] => {
   const errors = []
-  if (!state.email) errors.push({ path: 'email', message: 'Please enter an email.' })
+  if (!state.email) errors.push({ path: 'email', message: 'Email không được để trống' })
+  if (state.roles.length === 0) errors.push({ path: 'role', message: 'Vui lòng chọn ít nhất 1 vai trò' })
   return errors
 }
 
 async function onSubmit(event: FormSubmitEvent<any>) {
-  // Do something with data
-  console.log(event.data)
+  const users = await $fetch<IResponsePagination<User>>(`/v1/users`, {
+    baseURL: config.public.apiUrl,
+    query: {
+      keyword: event.data.email
+    },
+    headers: { Authorization: `Bearer ${accessToken.value}` }
+  })
 
-  emit('close')
+  if (users.meta.itemCount === 0) {
+    toast.add({ title: 'Tài khoản không tồn tại trong hệ thống', color: 'red' })
+    return
+  }
+
+  const existUser = users.data.find(u => u.email === event.data.email)
+
+  if (!existUser) {
+    toast.add({ title: 'Tài khoản không tồn tại trong hệ thống', color: 'red' })
+    return
+  }
+
+  await $fetch(`/v1/users/${existUser._id}/roles`, {
+    method: 'PATCH',
+    body: {
+      roles: event.data.roles
+    },
+    baseURL: config.public.apiUrl,
+    headers: { Authorization: `Bearer ${accessToken.value}` },
+    onResponse({ response }) {
+      if (response.ok) {
+        toast.add({ title: 'Đã mời thành công', color: 'green' })
+      } else {
+        toast.add({ title: 'Mời thất bại', color: 'red' })
+      }
+    }
+  })
+
+  emit('close', existUser)
 }
 </script>
 
 <template>
   <UForm
+    :state="state"
     :validate="validate"
     :validate-on="['submit']"
-    :state="state"
     class="space-y-4"
     @submit="onSubmit"
   >
@@ -37,34 +79,38 @@ async function onSubmit(event: FormSubmitEvent<any>) {
     >
       <UInput
         v-model="state.email"
-        type="email"
-        placeholder="john.doe@example.com"
         autofocus
+        placeholder="john.doe@example.com"
+        type="email"
       />
     </UFormGroup>
 
     <UFormGroup
-      label="Role"
+      label="Vai trò"
       name="role"
     >
       <USelectMenu
-        v-model="state.role"
-        :options="['member', 'owner']"
+        v-model="state.roles"
+        :options="selectRoles"
         :ui-menu="{ select: 'capitalize', option: { base: 'capitalize' } }"
+        multiple
+        option-attribute="name"
+        placeholder="Lựa chọn vai trò"
+        value-attribute="id"
       />
     </UFormGroup>
 
     <div class="flex justify-end gap-3">
       <UButton
-        label="Cancel"
         color="gray"
+        label="Huỷ"
         variant="ghost"
         @click="emit('close')"
       />
       <UButton
-        type="submit"
-        label="Save"
         color="black"
+        label="Lưu"
+        type="submit"
       />
     </div>
   </UForm>

@@ -2,7 +2,7 @@
 import type { IResponsePagination, Role, User } from '~/types'
 
 const toast = useToast()
-const props = defineProps<{ roles?: Role[], keyword?: string }>()
+const props = withDefaults(defineProps<{ roles?: Role[], keyword?: string, haveNewMember?: boolean }>(), { haveNewMember: false })
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { accessToken, user } = storeToRefs(authStore)
@@ -33,7 +33,7 @@ function getItems(member: User) {
 
 const queryRoles = computed(() => props.roles?.map(role => role._id))
 
-const { data: members } = useFetch<IResponsePagination<User>>('v1/users', {
+const { data: members, refresh: refreshMembers } = useFetch<IResponsePagination<User>>('v1/users', {
   baseURL: config.public.apiUrl,
   headers: { Authorization: `Bearer ${accessToken.value}` },
   query: {
@@ -42,6 +42,8 @@ const { data: members } = useFetch<IResponsePagination<User>>('v1/users', {
     'filter[roles][]': queryRoles
   }
 })
+
+watch(() => props.haveNewMember, () => refreshMembers())
 
 const findRole = (id: string) => {
   return props.roles.find(role => role._id === id)
@@ -73,6 +75,13 @@ const onDelete = async () => {
     }
   })
   deleting.value = false
+}
+
+const onCloseEditModal = (requireRefresh: boolean) => {
+  isEditModalOpen.value = false
+  editMember.value = undefined
+
+  if (requireRefresh === true) refreshMembers()
 }
 </script>
 
@@ -141,7 +150,7 @@ const onDelete = async () => {
     <SettingsEditMembersForm
       :member="editMember"
       :roles="props.roles"
-      @close="isEditModalOpen = false; editMember = undefined"
+      @close="onCloseEditModal"
     />
   </UDashboardModal>
   <UDashboardModal
