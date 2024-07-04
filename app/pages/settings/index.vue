@@ -1,28 +1,26 @@
 <script lang="ts" setup>
 import type { FormError, FormSubmitEvent } from '#ui/types'
+import type { User } from '~/types'
 
+const config = useRuntimeConfig()
+const authStore = useAuthStore()
+const { accessToken, user } = storeToRefs(authStore)
 const fileRef = ref<HTMLInputElement>()
 const isDeleteAccountModalOpen = ref(false)
-const authStore = useAuthStore()
-const { user } = storeToRefs(authStore)
-
-const state = reactive({
-  name: user.value.full_name,
-  email: user.value.email,
-  phone: user.value.phone,
-  avatar: user.value.avatar,
-  bio: user.value.bio,
-  password_current: '',
-  password_new: ''
-})
+const avatar = ref()
+const objectAvatar = ref()
+const password = ref()
+const rePassword = ref()
 
 const toast = useToast()
 
-function validate(state: any): FormError[] {
+function validate(state: User): FormError[] {
   const errors = []
-  if (!state.name) errors.push({ path: 'name', message: 'Vui lòng nhập họ tên.' })
+  if (!state.full_name) errors.push({ path: 'name', message: 'Vui lòng nhập họ tên.' })
   if (!state.email) errors.push({ path: 'email', message: 'Vui lòng nhập email.' })
-  if ((state.password_current && !state.password_new) || (!state.password_current && state.password_new)) errors.push({ path: 'password', message: 'Vui lòng nhập mật khẩu hợp lệ.' })
+  if (password.value || rePassword.value) {
+    if (password.value !== rePassword.value) errors.push({ path: 'password', message: 'Mật khẩu không khớp nhau' })
+  }
   return errors
 }
 
@@ -33,18 +31,37 @@ function onFileChange(e: Event) {
     return
   }
 
-  state.avatar = URL.createObjectURL(input.files[0])
+  objectAvatar.value = URL.createObjectURL(input.files[0])
+  avatar.value = input.files[0]
 }
 
 function onFileClick() {
   fileRef.value?.click()
 }
 
-async function onSubmit(event: FormSubmitEvent<any>) {
-  // Do something with data
-  console.log(event.data)
+async function onSubmit(event: FormSubmitEvent<User>) {
+  const formData = new FormData()
+  Object.keys(reactivePick(event.data, 'email', 'full_name', 'phone', 'bio')).forEach((key) => {
+    formData.append(key, event.data[key])
+  })
 
-  toast.add({ title: 'Profile updated', icon: 'i-heroicons-check-circle' })
+  if (avatar.value) formData.append('avatar', avatar.value)
+
+  await $fetch(`/v1/users/me`, {
+    method: 'PATCH',
+    body: formData,
+    baseURL: config.public.apiUrl,
+    headers: {
+      Authorization: `Bearer ${accessToken.value}`
+    },
+    onResponse({ response }) {
+      if (response.ok) {
+        toast.add({ title: 'Đã cập nhật hồ sơ', icon: 'i-heroicons-check-circle', color: 'green' })
+      } else {
+        toast.add({ title: 'Cập nhật hồ sơ thất bại', color: 'red' })
+      }
+    }
+  })
 }
 </script>
 
@@ -62,7 +79,7 @@ async function onSubmit(event: FormSubmitEvent<any>) {
     <UDivider class="mb-4" />
 
     <UForm
-      :state="state"
+      :state="user"
       :validate="validate"
       :validate-on="['submit']"
       @submit="onSubmit"
@@ -88,9 +105,10 @@ async function onSubmit(event: FormSubmitEvent<any>) {
           required
         >
           <UInput
-            v-model="state.name"
+            v-model="user.full_name"
             autocomplete="off"
             icon="i-heroicons-user"
+            required
             size="md"
           />
         </UFormGroup>
@@ -104,9 +122,9 @@ async function onSubmit(event: FormSubmitEvent<any>) {
           required
         >
           <UInput
-            v-model="state.email"
-            autocomplete="off"
+            v-model="user.email"
             icon="i-heroicons-envelope"
+            required
             size="md"
             type="email"
           />
@@ -121,7 +139,7 @@ async function onSubmit(event: FormSubmitEvent<any>) {
           required
         >
           <UInput
-            v-model="state.phone"
+            v-model="user.phone"
             autocomplete="off"
             icon="i-heroicons-phone"
             size="md"
@@ -137,8 +155,8 @@ async function onSubmit(event: FormSubmitEvent<any>) {
           name="avatar"
         >
           <UAvatar
-            :alt="state.name"
-            :src="state.avatar"
+            :alt="user.full_name"
+            :src="objectAvatar ?? user.avatar"
             size="lg"
           />
 
@@ -166,7 +184,7 @@ async function onSubmit(event: FormSubmitEvent<any>) {
           name="bio"
         >
           <UTextarea
-            v-model="state.bio"
+            v-model="user.bio"
             :rows="5"
             autoresize
             size="md"
@@ -176,22 +194,22 @@ async function onSubmit(event: FormSubmitEvent<any>) {
         <UFormGroup
           :ui="{ container: '' }"
           class="grid grid-cols-2 gap-2"
-          description="Xác nhận mật khẩu hiện tại của bạn trước khi đặt mật khẩu mới."
+          description="Chỉ nhập khi cần thay đổi mật khẩu."
           label="Mật khẩu"
           name="password"
         >
           <UInput
             id="password"
-            v-model="state.password_current"
-            placeholder="Mật khẩu hiện tại"
+            v-model="password"
+            placeholder="Mật khẩu mới"
             size="md"
             type="password"
           />
           <UInput
-            id="password_new"
-            v-model="state.password_new"
+            id="rePassword"
+            v-model="rePassword"
             class="mt-2"
-            placeholder="Mật khẩu mới"
+            placeholder="Nhập lại mật khẩu mới"
             size="md"
             type="password"
           />
@@ -215,7 +233,6 @@ async function onSubmit(event: FormSubmitEvent<any>) {
       </div>
     </UDashboardSection>
 
-    <!-- ~/components/settings/DeleteAccountModal.vue -->
     <SettingsDeleteAccountModal v-model="isDeleteAccountModalOpen" />
   </UDashboardPanelContent>
 </template>
