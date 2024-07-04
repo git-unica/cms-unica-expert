@@ -1,13 +1,18 @@
 <script lang="ts" setup>
 import type { IResponsePagination, Role, User } from '~/types'
 
+const toast = useToast()
 const props = defineProps<{ roles?: Role[], keyword?: string }>()
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
+const { accessToken, user } = storeToRefs(authStore)
 const keyword = computed(() => props.keyword)
 const isEditModalOpen = ref(false)
 const editMember = ref<User>()
+const confirmDeleteMember = ref(false)
+const removeMember = ref<User>()
+const deleting = ref(false)
+const page = ref(1)
 
 function getItems(member: User) {
   return [[{
@@ -19,7 +24,10 @@ function getItems(member: User) {
   }, {
     label: 'Xoá',
     labelClass: 'text-red-500 dark:text-red-400',
-    click: () => console.log('Remove', member)
+    click: () => {
+      removeMember.value = member
+      confirmDeleteMember.value = true
+    }
   }]]
 }
 
@@ -30,12 +38,41 @@ const { data: members } = useFetch<IResponsePagination<User>>('v1/users', {
   headers: { Authorization: `Bearer ${accessToken.value}` },
   query: {
     keyword,
+    page,
     'filter[roles][]': queryRoles
   }
 })
 
 const findRole = (id: string) => {
   return props.roles.find(role => role._id === id)
+}
+
+const onDelete = async () => {
+  deleting.value = true
+  await $fetch(`v1/users/${removeMember.value._id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken.value}` },
+    baseURL: config.public.apiUrl,
+    onResponse({ response }) {
+      if (response.ok) {
+        if (removeMember.value._id === user.value._id) {
+          authStore.logout()
+          navigateTo('/')
+        }
+
+        const idx = members.value.data.findIndex(m => m._id === removeMember.value._id)
+        members.value.data.splice(idx, 1)
+        members.value.meta.itemCount--
+        members.value.meta.pageCount--
+
+        toast.add({ icon: 'i-heroicons-check-circle', title: `Tài khoản ${removeMember.value.full_name} đã xoá`, color: 'green' })
+        removeMember.value = undefined
+      } else {
+        toast.add({ title: `Có lỗi khi xoá tài khoản`, color: 'red' })
+      }
+    }
+  })
+  deleting.value = false
 }
 </script>
 
@@ -87,17 +124,55 @@ const findRole = (id: string) => {
       </div>
     </li>
   </ul>
+  <div class="my-2 flex justify-center">
+    <UPagination
+      v-model="page"
+      :page-count="members.meta.take"
+      :total="members.meta.itemCount"
+    />
+  </div>
   <UDashboardModal
+    v-if="editMember"
     v-model="isEditModalOpen"
     :ui="{ width: 'sm:max-w-md' }"
     description="Mỗi nhân viên có thể có nhiều vai trò đồng thời"
     title="Phân vai trò nhân viên"
   >
-    <!-- ~/components/settings/MembersForm.vue -->
     <SettingsEditMembersForm
       :member="editMember"
       :roles="props.roles"
-      @close="isEditModalOpen = false"
+      @close="isEditModalOpen = false; editMember = undefined"
     />
+  </UDashboardModal>
+  <UDashboardModal
+    v-if="removeMember"
+    v-model="confirmDeleteMember"
+    :close-button="null"
+    :description="`Bạn có chắc rằng bạn muốn xóa tài khoản ${removeMember.full_name} chứ?`"
+    :ui="{
+      icon: {
+        base: 'text-red-500 dark:text-red-400'
+      } as any,
+      footer: {
+        base: 'ml-16'
+      } as any
+    }"
+    icon="i-heroicons-exclamation-circle"
+    prevent-close
+    title="Xoá tài khoản"
+  >
+    <template #footer>
+      <UButton
+        :loading="deleting"
+        color="red"
+        label="Xoá"
+        @click="onDelete"
+      />
+      <UButton
+        color="white"
+        label="Huỷ"
+        @click="confirmDeleteMember = false"
+      />
+    </template>
   </UDashboardModal>
 </template>
