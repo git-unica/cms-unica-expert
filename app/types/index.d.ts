@@ -1,3 +1,5 @@
+import type { ERole } from '~/enums/role.enum'
+
 export interface User {
   _id: string
   username: string
@@ -58,17 +60,7 @@ export interface IResponsePagination<T> {
   meta: IMetaPaginate
 }
 
-export interface IResponseLoginSuccess {
-  access_token: string
-  access_token_unica_id: string
-  data: User
-  refresh_token: string
-  status: number
-}
-
-export interface IResponseLoginFail {
-  data: {
-    message: string
-  }
-  status: number
+export interface Role {
+  _id: string
+  name: (typeof ERole)[keyof typeof ERole]
 }

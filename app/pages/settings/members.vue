@@ -1,30 +1,33 @@
-<script setup lang="ts">
-import type { Member } from '~/types'
+<script lang="ts" setup>
+import type { Role } from '~/types'
+import { ERole } from '~/enums/role.enum'
 
-const { data: members } = await useFetch<Member[]>('/api/members', { default: () => [] })
-
-const q = ref('')
+const config = useRuntimeConfig()
+const authStore = useAuthStore()
+const { accessToken } = storeToRefs(authStore)
+const q = ref()
 const isInviteModalOpen = ref(false)
 
-const filteredMembers = computed(() => {
-  return members.value.filter((member) => {
-    return member.name.search(new RegExp(q.value, 'i')) !== -1 || member.username.search(new RegExp(q.value, 'i')) !== -1
-  })
+const { data: roles } = useFetch<Role[]>('/v1/admin/roles/list', {
+  baseURL: config.public.apiUrl,
+  headers: { Authorization: `Bearer ${accessToken.value}` }
 })
+
+const managerRoles = computed(() => roles.value?.filter(role => Object.values(ERole).includes(role.name)))
 </script>
 
 <template>
   <UDashboardPanelContent class="pb-24">
     <UDashboardSection
-      title="Manage access"
-      description="Invite new members by email address."
-      orientation="horizontal"
       :ui="{ container: 'lg:sticky top-2' }"
+      description="Mời thành viên mới bằng địa chỉ email."
+      orientation="horizontal"
+      title="Quản lý truy cập"
     >
       <template #links>
         <UButton
-          label="Invite people"
           color="black"
+          label="Thêm người"
           @click="isInviteModalOpen = true"
         />
       </template>
@@ -36,25 +39,26 @@ const filteredMembers = computed(() => {
         <template #header>
           <UInput
             v-model="q"
-            icon="i-heroicons-magnifying-glass"
-            placeholder="Search members"
             autofocus
+            icon="i-heroicons-magnifying-glass"
+            placeholder="Tìm kiếm nhân viên"
           />
         </template>
 
-        <!-- ~/components/settings/MembersList.vue -->
-        <SettingsMembersList :members="filteredMembers" />
+        <SettingsMembersList
+          :keyword="q"
+          :roles="managerRoles"
+        />
       </UCard>
     </UDashboardSection>
 
     <UDashboardModal
       v-model="isInviteModalOpen"
-      title="Invite people"
-      description="Invite new members by email address"
       :ui="{ width: 'sm:max-w-md' }"
+      description="Invite new members by email address"
+      title="Invite people"
     >
-      <!-- ~/components/settings/MembersForm.vue -->
-      <SettingsMembersForm @close="isInviteModalOpen = false" />
+      <SettingsAddMembersForm @close="isInviteModalOpen = false" />
     </UDashboardModal>
   </UDashboardPanelContent>
 </template>
