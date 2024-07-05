@@ -2,6 +2,7 @@
 import type { FormError, FormSubmitEvent } from '#ui/types'
 import type { User } from '~/types'
 
+const toast = useToast()
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { accessToken, user } = storeToRefs(authStore)
@@ -11,15 +12,18 @@ const avatar = ref()
 const objectAvatar = ref()
 const password = ref()
 const rePassword = ref()
-
-const toast = useToast()
+const phone = ref()
+const errorPhone = ref()
 
 function validate(state: User): FormError[] {
   const errors = []
-  if (!state.full_name) errors.push({ path: 'name', message: 'Vui lòng nhập họ tên.' })
-  if (!state.email) errors.push({ path: 'email', message: 'Vui lòng nhập email.' })
+  if (!state.full_name)
+    errors.push({ path: 'name', message: 'Vui lòng nhập họ tên.' })
+  if (!state.email)
+    errors.push({ path: 'email', message: 'Vui lòng nhập email.' })
   if (password.value || rePassword.value) {
-    if (password.value !== rePassword.value) errors.push({ path: 'password', message: 'Mật khẩu không khớp nhau' })
+    if (password.value !== rePassword.value)
+      errors.push({ path: 'password', message: 'Mật khẩu không khớp nhau' })
   }
   return errors
 }
@@ -40,11 +44,16 @@ function onFileClick() {
 }
 
 async function onSubmit(event: FormSubmitEvent<User>) {
+  if (errorPhone.value) return
+
   const formData = new FormData()
-  Object.keys(reactivePick(event.data, 'email', 'full_name', 'phone', 'bio')).forEach((key) => {
+  Object.keys(
+    reactivePick(event.data, 'email', 'full_name', 'bio')
+  ).forEach((key) => {
     formData.append(key, event.data[key])
   })
 
+  if (phone.value) formData.append('phone', phone.value)
   if (avatar.value) formData.append('avatar', avatar.value)
 
   await $fetch(`/v1/users/me`, {
@@ -56,12 +65,26 @@ async function onSubmit(event: FormSubmitEvent<User>) {
     },
     onResponse({ response }) {
       if (response.ok) {
-        toast.add({ title: 'Đã cập nhật hồ sơ', icon: 'i-heroicons-check-circle', color: 'green' })
+        toast.add({
+          title: 'Đã cập nhật hồ sơ',
+          icon: 'i-heroicons-check-circle',
+          color: 'green'
+        })
       } else {
         toast.add({ title: 'Cập nhật hồ sơ thất bại', color: 'red' })
       }
     }
   })
+}
+
+const onChangePhone = (number: string, phoneObject: { valid: boolean, number: string }) => {
+  if (phoneObject.valid) {
+    phone.value = phoneObject.number
+    errorPhone.value = undefined
+  } else {
+    phone.value = undefined
+    errorPhone.value = 'Số điện thoại không hợp lệ'
+  }
 }
 </script>
 
@@ -138,13 +161,20 @@ async function onSubmit(event: FormSubmitEvent<User>) {
           name="phone"
           required
         >
-          <UInput
-            v-model="user.phone"
-            autocomplete="off"
-            icon="i-heroicons-phone"
-            size="md"
-            type="phone"
-          />
+          <ClientOnly>
+            <TelInput
+              v-model="user.phone"
+              :preferred-countries="['vn']"
+              :valid-characters-only="true"
+              required
+              @on-input="onChangePhone"
+            />
+            <small
+              v-if="errorPhone"
+              class="text-red-500"
+              v-text="errorPhone"
+            />
+          </ClientOnly>
         </UFormGroup>
 
         <UFormGroup
