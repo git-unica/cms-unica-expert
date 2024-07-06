@@ -6,6 +6,7 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { accessToken } = storeToRefs(authStore)
 const q = ref()
+const keyword = refDebounced(q, 500)
 const isInviteModalOpen = ref(false)
 const haveNewMember = ref(false)
 
@@ -54,7 +55,7 @@ const onCloseInviteModal = (newUser?: User) => {
 
         <SettingsMembersList
           :have-new-member="haveNewMember"
-          :keyword="q"
+          :keyword="keyword"
           :roles="managerRoles"
         />
       </UCard>

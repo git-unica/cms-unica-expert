@@ -27,6 +27,7 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { accessToken } = storeToRefs(authStore)
 const q = ref()
+const keyword = refDebounced(q, 500)
 const selected = ref<User[]>([])
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const sortTable = ref({ column: '_id', direction: 'desc' } as const)
@@ -34,7 +35,7 @@ const input = ref<{ input: HTMLInputElement }>()
 const isNewUserModalOpen = ref(false)
 const page = ref(1)
 const query = reactive({
-  keyword: q,
+  keyword,
   page
 })
 

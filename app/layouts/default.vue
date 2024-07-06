@@ -20,6 +20,16 @@ const links = [{
     text: 'Thành viên',
     shortcuts: ['G', 'U']
   }
+},
+{
+  id: 'communities',
+  label: 'Cộng đồng',
+  icon: 'i-heroicons-rectangle-group',
+  to: '/communities',
+  tooltip: {
+    text: 'Cộng đồng',
+    shortcuts: ['G', 'C']
+  }
 }, {
   id: 'settings',
   label: 'Settings',

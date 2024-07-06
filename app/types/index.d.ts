@@ -1,4 +1,5 @@
 import type { ERole } from '~/enums/role.enum'
+import type { ECommunityStatus } from '~/enums/community-status.enum'
 
 export interface User {
   _id: string
@@ -10,6 +11,34 @@ export interface User {
   bio?: string
   ref?: string
   roles?: string[]
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+}
+
+export interface Community {
+  _id: string
+  name: string
+  short_name: string
+  status: (typeof ECommunityStatus)[keyof typeof ECommunityStatus]
+  topic_id: string
+  owner_id: string
+  auto_pay_package?: boolean
+  total_members: number
+  total_admin: number
+  introduce: string
+  description: string
+  package_code: string
+  icon?: string
+  thumbnail?: string
+  slides?: {
+    id: number
+    name: string
+    type: string
+    ext: string
+    url: string
+    size: number
+  }[]
   created_at: string
   updated_at: string
   deleted_at?: string

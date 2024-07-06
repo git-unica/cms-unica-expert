@@ -29,6 +29,7 @@
   "devDependencies": {
     "@nuxt/eslint": "^0.3.13",
     "@pinia-plugin-persistedstate/nuxt": "^1.2.1",
+    "dayjs-nuxt": "^2.1.9",
     "eslint": "^9.5.0",
     "typescript": "^5.5.3",
     "vue-tsc": "^2.0.22"
