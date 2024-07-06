@@ -31,6 +31,15 @@ const links = [{
     shortcuts: ['G', 'C']
   }
 }, {
+  id: 'level',
+  label: 'Cấp độ thành viên',
+  icon: 'i-heroicons-rectangle-stack',
+  to: '/level',
+  tooltip: {
+    text: 'Cấp độ thành viên',
+    shortcuts: ['G', 'L']
+  }
+}, {
   id: 'settings',
   label: 'Settings',
   to: '/settings',

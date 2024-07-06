@@ -16,6 +16,15 @@ export interface User {
   deleted_at?: string
 }
 
+export interface Level {
+  id: string
+  name: string
+  point: number
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+}
+
 export interface Community {
   _id: string
   name: string
