@@ -23,21 +23,45 @@ const defaultColumns = [
   }
 ]
 
+const toast = useToast()
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { accessToken } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
+const isOpenEditModal = ref(false)
+const editRow = ref<Level>()
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
 
-const { data: communities, status } = await useFetch<Level[]>('/v1/level', {
+const { data: allLevel, status, refresh } = await useFetch<Level[]>('/v1/level', {
   baseURL: config.public.apiUrl,
   headers: { Authorization: `Bearer ${accessToken.value}` }
 })
 
-const onUpdate = (row: Level) => {
+const onUpdate = async () => {
+  if (!editRow.value) return
 
+  await $fetch(`v1/level`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken.value}` },
+    baseURL: config.public.apiUrl,
+    body: {
+      level_id: editRow.value._id,
+      title: editRow.value.name,
+      point: editRow.value.point
+    },
+    onResponse({ response }) {
+      if (response.ok) {
+        refresh()
+        isOpenEditModal.value = false
+
+        toast.add({ title: 'Cập nhật cấp độ thành viên thành công', color: 'green' })
+      } else {
+        toast.add({ title: 'Có lỗi khi thao tác', color: 'red' })
+      }
+    }
+  })
 }
 
 const onDelete = (row: Level) => {
@@ -55,7 +79,7 @@ defineShortcuts({
   <UDashboardPage>
     <UDashboardPanel grow>
       <UDashboardNavbar
-        :badge="communities.length"
+        :badge="allLevel.length"
         title="Cấp độ thành viên"
       />
 
@@ -78,7 +102,7 @@ defineShortcuts({
       <UTable
         :columns="columns"
         :loading="status === 'pending'"
-        :rows="communities"
+        :rows="allLevel"
         :ui="{ divide: 'divide-gray-200 dark:divide-gray-800' }"
         class="w-full"
       >
@@ -87,7 +111,7 @@ defineShortcuts({
             :ui="{ rounded: 'rounded-full' }"
             class="mr-1"
             icon="i-heroicons-pencil-square"
-            @click="onUpdate(row)"
+            @click="isOpenEditModal = true; editRow = row"
           />
           <UButton
             :ui="{ rounded: 'rounded-full' }"
@@ -99,5 +123,37 @@ defineShortcuts({
       </UTable>
       <UDivider />
     </UDashboardPanel>
+    <UDashboardModal
+      v-model="isOpenEditModal"
+      :close-button="null"
+      title="Sửa cấp độ"
+    >
+      <UForm
+        :state="editRow"
+        class="space-y-4"
+        @submit="onUpdate"
+      >
+        <UFormGroup
+          label="Tên hiển thị"
+          name="name"
+        >
+          <UInput v-model="editRow.name" />
+        </UFormGroup>
+
+        <UFormGroup
+          label="Điểm"
+          name="pont"
+        >
+          <UInput
+            v-model="editRow.point"
+            type="number"
+          />
+        </UFormGroup>
+
+        <UButton type="submit">
+          Lưu
+        </UButton>
+      </UForm>
+    </UDashboardModal>
   </UDashboardPage>
 </template>

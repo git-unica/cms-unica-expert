@@ -17,7 +17,7 @@ export interface User {
 }
 
 export interface Level {
-  id: string
+  _id: string
   name: string
   point: number
   created_at: string
