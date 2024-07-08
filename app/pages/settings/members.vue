@@ -53,12 +53,14 @@ const onCloseInviteModal = (newUser?: User) => {
           />
         </template>
 
-        <SettingsMembersList
-          v-if="status === 'success'"
-          :have-new-member="haveNewMember"
-          :keyword="keyword"
-          :roles="managerRoles"
-        />
+        <ClientOnly>
+          <SettingsMembersList
+            v-if="status === 'success'"
+            :have-new-member="haveNewMember"
+            :keyword="keyword"
+            :roles="managerRoles"
+          />
+        </ClientOnly>
       </UCard>
     </UDashboardSection>
 

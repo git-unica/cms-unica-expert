@@ -2,7 +2,11 @@
 import type { IResponsePagination, Role, User } from '~/types'
 
 const toast = useToast()
-const props = withDefaults(defineProps<{ roles?: Role[], keyword?: string, haveNewMember?: boolean }>(), { haveNewMember: false })
+const props = withDefaults(defineProps<{
+  roles?: Role[]
+  keyword?: string
+  haveNewMember?: boolean
+}>(), { haveNewMember: false })
 const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { accessToken, user } = storeToRefs(authStore)
@@ -13,6 +17,7 @@ const confirmDeleteMember = ref(false)
 const removeMember = ref<User>()
 const deleting = ref(false)
 const page = ref(1)
+const errorMsg = ref()
 
 function getItems(member: User) {
   return [[{
@@ -33,13 +38,31 @@ function getItems(member: User) {
 
 const queryRoles = computed(() => props.roles?.map(role => role._id))
 
-const { data: members, status: statusMembers, refresh: refreshMembers } = useFetch<IResponsePagination<User>>('v1/users', {
+const {
+  data: members,
+  status: statusMembers,
+  refresh: refreshMembers
+} = useFetch<IResponsePagination<User>>('v1/users', {
   baseURL: config.public.apiUrl,
   headers: { Authorization: `Bearer ${accessToken.value}` },
   query: {
     keyword,
     page,
     'filter[roles][]': queryRoles
+  },
+  default: () => ({
+    meta: {
+      page: 0,
+      take: 10,
+      itemCount: 0,
+      pageCount: 0,
+      hasPreviousPage: false,
+      hasNextPage: false
+    },
+    data: []
+  }),
+  onResponseError({ response }) {
+    errorMsg.value = response._data?.message ?? ''
   }
 })
 
@@ -67,7 +90,11 @@ const onDelete = async () => {
         members.value.meta.itemCount--
         members.value.meta.pageCount--
 
-        toast.add({ icon: 'i-heroicons-check-circle', title: `Tài khoản ${removeMember.value.full_name} đã xoá`, color: 'green' })
+        toast.add({
+          icon: 'i-heroicons-check-circle',
+          title: `Tài khoản ${removeMember.value.full_name} đã xoá`,
+          color: 'green'
+        })
         removeMember.value = undefined
       } else {
         toast.add({ title: `Có lỗi khi xoá tài khoản`, color: 'red' })
@@ -86,6 +113,12 @@ const onCloseEditModal = (requireRefresh: boolean) => {
 </script>
 
 <template>
+  <div
+    v-if="errorMsg"
+    class="flex flex-col items-center justify-center py-6 gap-3"
+  >
+    <span class="italic text-sm">{{ errorMsg }}</span>
+  </div>
   <template v-if="statusMembers === 'success' && members">
     <ul
       class="divide-y divide-gray-200 dark:divide-gray-800"

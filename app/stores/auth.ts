@@ -23,25 +23,6 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = userInfo
   }
 
-  const setUserAvatar = async (avatar: string) => {
-    await $fetch('/users/avatar', {
-      body: {
-        avatar_url: avatar,
-        user_id: user.value?._id
-      },
-      method: 'PATCH',
-      baseURL: config.public.apiUrl,
-      headers: {
-        Authorization: `Bearer ${accessToken.value}`
-      },
-      onResponse({ response }) {
-        if (response.ok && user.value) {
-          user.value.avatar = avatar
-        }
-      }
-    })
-  }
-
   const setRefreshToken = (token?: string) => {
     refreshToken.value = token
   }
@@ -76,8 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     isLogin,
     logout,
-    getUserInfo,
-    setUserAvatar
+    getUserInfo
   }
 }, {
   persist: {

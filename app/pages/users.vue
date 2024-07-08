@@ -37,6 +37,7 @@ const query = reactive({
   keyword,
   page
 })
+const errorMsg = ref()
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
 
@@ -52,7 +53,22 @@ watch(sortTable, (newValue) => {
 const { data: users, status } = await useFetch<IResponsePagination<User>>('/v1/users', {
   query,
   baseURL: config.public.apiUrl,
-  headers: { Authorization: `Bearer ${accessToken.value}` }
+  headers: { Authorization: `Bearer ${accessToken.value}` },
+  lazy: true,
+  default: () => ({
+    meta: {
+      page: 0,
+      take: 10,
+      itemCount: 0,
+      pageCount: 0,
+      hasPreviousPage: false,
+      hasNextPage: false
+    },
+    data: []
+  }),
+  onResponseError({ response }) {
+    errorMsg.value = response._data?.message ?? ''
+  }
 })
 
 function onSelect(row: User) {
@@ -143,9 +159,17 @@ defineShortcuts({
             <span class="text-gray-900 dark:text-white font-medium">{{ row.full_name }}</span>
           </div>
         </template>
+        <template #empty-state>
+          <div class="flex flex-col items-center justify-center py-6 gap-3">
+            <span class="italic text-sm">{{ errorMsg ?? 'Không có thành viên' }}</span>
+          </div>
+        </template>
       </UTable>
       <UDivider />
-      <div class="my-2 mx-auto">
+      <div
+        v-if="users.meta.itemCount > 0"
+        class="my-2 mx-auto"
+      >
         <UPagination
           v-model="page"
           :page-count="users.meta.take"
