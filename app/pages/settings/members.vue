@@ -10,7 +10,7 @@ const keyword = refDebounced(q, 500)
 const isInviteModalOpen = ref(false)
 const haveNewMember = ref(false)
 
-const { data: roles } = useFetch<Role[]>('/v1/admin/roles/list', {
+const { data: roles, status } = useFetch<Role[]>('/v1/admin/roles/list', {
   baseURL: config.public.apiUrl,
   headers: { Authorization: `Bearer ${accessToken.value}` }
 })
@@ -54,6 +54,7 @@ const onCloseInviteModal = (newUser?: User) => {
         </template>
 
         <SettingsMembersList
+          v-if="status === 'success'"
           :have-new-member="haveNewMember"
           :keyword="keyword"
           :roles="managerRoles"

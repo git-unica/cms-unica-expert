@@ -33,7 +33,7 @@ function getItems(member: User) {
 
 const queryRoles = computed(() => props.roles?.map(role => role._id))
 
-const { data: members, refresh: refreshMembers } = useFetch<IResponsePagination<User>>('v1/users', {
+const { data: members, status: statusMembers, refresh: refreshMembers } = useFetch<IResponsePagination<User>>('v1/users', {
   baseURL: config.public.apiUrl,
   headers: { Authorization: `Bearer ${accessToken.value}` },
   query: {
@@ -86,60 +86,61 @@ const onCloseEditModal = (requireRefresh: boolean) => {
 </script>
 
 <template>
-  <ul
-    v-if="members"
-    class="divide-y divide-gray-200 dark:divide-gray-800"
-    role="list"
-  >
-    <li
-      v-for="(member, index) in members.data"
-      :key="index"
-      class="flex items-center justify-between gap-3 py-3 px-4 sm:px-6"
+  <template v-if="statusMembers === 'success' && members">
+    <ul
+      class="divide-y divide-gray-200 dark:divide-gray-800"
+      role="list"
     >
-      <div class="flex items-center gap-3 min-w-0">
-        <UAvatar
-          :src="member.avatar"
-          size="md"
-        />
-
-        <div class="text-sm min-w-0">
-          <p class="text-gray-900 dark:text-white font-medium truncate">
-            {{ member.full_name }}
-          </p>
-          <p class="text-gray-500 dark:text-gray-400 truncate">
-            {{ member.username }}
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <UKbd
-          v-for="mr in member.roles"
-          :key="mr"
-        >
-          {{ findRole(mr).name }}
-        </UKbd>
-
-        <UDropdown
-          :items="getItems(member)"
-          position="bottom-end"
-        >
-          <UButton
-            color="gray"
-            icon="i-heroicons-ellipsis-vertical"
-            variant="ghost"
+      <li
+        v-for="(member, index) in members.data"
+        :key="index"
+        class="flex items-center justify-between gap-3 py-3 px-4 sm:px-6"
+      >
+        <div class="flex items-center gap-3 min-w-0">
+          <UAvatar
+            :src="member.avatar"
+            size="md"
           />
-        </UDropdown>
-      </div>
-    </li>
-  </ul>
-  <div class="my-2 flex justify-center">
-    <UPagination
-      v-model="page"
-      :page-count="members.meta.take"
-      :total="members.meta.itemCount"
-    />
-  </div>
+
+          <div class="text-sm min-w-0">
+            <p class="text-gray-900 dark:text-white font-medium truncate">
+              {{ member.full_name }}
+            </p>
+            <p class="text-gray-500 dark:text-gray-400 truncate">
+              {{ member.username }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <UKbd
+            v-for="mr in member.roles"
+            :key="mr"
+          >
+            {{ findRole(mr).name }}
+          </UKbd>
+
+          <UDropdown
+            :items="getItems(member)"
+            position="bottom-end"
+          >
+            <UButton
+              color="gray"
+              icon="i-heroicons-ellipsis-vertical"
+              variant="ghost"
+            />
+          </UDropdown>
+        </div>
+      </li>
+    </ul>
+    <div class="my-2 flex justify-center">
+      <UPagination
+        v-model="page"
+        :page-count="members.meta.take"
+        :total="members.meta.itemCount"
+      />
+    </div>
+  </template>
   <UDashboardModal
     v-if="editMember"
     v-model="isEditModalOpen"
