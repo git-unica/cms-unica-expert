@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { number, object, string } from 'yup'
+import Notiflix from 'notiflix'
 import type { Level } from '~/types'
 
 const defaultColumns = [
@@ -31,8 +33,20 @@ const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
 const editRow = ref<Level>()
+const isOpenAddModal = ref(false)
+const newRow = ref({
+  name: '',
+  point: 0
+})
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
+
+const schema = object({
+  name: string().required('Không được trống'),
+  point: number()
+    .min(0, 'Giá trị tối thiểu là 0')
+    .required('Không được trống')
+})
 
 const { data: allLevel, status, refresh } = await useFetch<Level[]>('/v1/level', {
   baseURL: config.public.apiUrl,
@@ -64,8 +78,53 @@ const onUpdate = async () => {
   })
 }
 
-const onDelete = (row: Level) => {
+const onAdd = async () => {
+  await $fetch(`v1/level`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken.value}` },
+    baseURL: config.public.apiUrl,
+    body: {
+      title: newRow.value.name,
+      point: newRow.value.point
+    },
+    onResponse({ response }) {
+      if (response.ok) {
+        refresh()
+        isOpenAddModal.value = false
 
+        toast.add({ title: 'Thêm cấp độ thành viên thành công', color: 'green' })
+      } else {
+        toast.add({ title: 'Có lỗi khi thao tác', color: 'red' })
+      }
+    }
+  })
+}
+
+const onConfirmDelete = (row: Level) => {
+  Notiflix.Confirm.show(
+    'Cảnh báo',
+    `Bạn đang thực hiện xoá ${row.name}`,
+    'Chắc chắn',
+    'Huỷ',
+    () => onDelete(row)
+  )
+}
+
+const onDelete = async (row: Level) => {
+  await $fetch(`v1/level/${row._id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken.value}` },
+    baseURL: config.public.apiUrl,
+    onResponse({ response }) {
+      if (response.ok) {
+        refresh()
+
+        toast.add({ title: 'Xoá cấp độ thành viên thành công', color: 'green' })
+      } else {
+        toast.add({ title: 'Có lỗi khi thao tác', color: 'red' })
+      }
+    }
+  })
 }
 
 defineShortcuts({
@@ -81,7 +140,16 @@ defineShortcuts({
       <UDashboardNavbar
         :badge="allLevel.length"
         title="Cấp độ thành viên"
-      />
+      >
+        <template #right>
+          <UButton
+            color="gray"
+            label="Thêm cấp độ"
+            trailing-icon="i-heroicons-plus"
+            @click="isOpenAddModal = true"
+          />
+        </template>
+      </UDashboardNavbar>
 
       <UDashboardToolbar>
         <template #right>
@@ -117,7 +185,7 @@ defineShortcuts({
             :ui="{ rounded: 'rounded-full' }"
             color="rose"
             icon="i-heroicons-trash"
-            @click="onDelete(row)"
+            @click="onConfirmDelete(row)"
           />
         </template>
       </UTable>
@@ -129,6 +197,7 @@ defineShortcuts({
       title="Sửa cấp độ"
     >
       <UForm
+        :schema="schema"
         :state="editRow"
         class="space-y-4"
         @submit="onUpdate"
@@ -146,6 +215,39 @@ defineShortcuts({
         >
           <UInput
             v-model="editRow.point"
+            type="number"
+          />
+        </UFormGroup>
+
+        <UButton type="submit">
+          Lưu
+        </UButton>
+      </UForm>
+    </UDashboardModal>
+    <UDashboardModal
+      v-model="isOpenAddModal"
+      :close-button="null"
+      title="Thêm cấp độ"
+    >
+      <UForm
+        :schema="schema"
+        :state="newRow"
+        class="space-y-4"
+        @submit="onAdd"
+      >
+        <UFormGroup
+          label="Tên hiển thị"
+          name="name"
+        >
+          <UInput v-model="newRow.name" />
+        </UFormGroup>
+
+        <UFormGroup
+          label="Điểm"
+          name="pont"
+        >
+          <UInput
+            v-model="newRow.point"
             type="number"
           />
         </UFormGroup>

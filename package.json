@@ -24,7 +24,8 @@
     "notiflix": "^3.2.7",
     "nuxt": "^3.12.2",
     "v-calendar": "^3.1.2",
-    "vue-tel-input": "^9.1.4"
+    "vue-tel-input": "^9.1.4",
+    "yup": "^1.4.0"
   },
   "devDependencies": {
     "@nuxt/eslint": "^0.3.13",
