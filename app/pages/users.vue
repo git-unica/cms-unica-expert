@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Notify } from 'notiflix'
+import Notiflix from 'notiflix'
 import type { IResponsePagination, User } from '~/types'
 
 const defaultColumns = [
@@ -98,7 +98,7 @@ defineShortcuts({
             color="gray"
             label="Thêm thành viên"
             trailing-icon="i-heroicons-plus"
-            @click="Notify.warning('Tính năng đang phát triển', { position: 'center-top' })"
+            @click="Notiflix.Notify.warning('Tính năng đang phát triển', { position: 'center-top' })"
           />
         </template>
       </UDashboardNavbar>

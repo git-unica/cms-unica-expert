@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Notify } from 'notiflix'
+import Notiflix from 'notiflix'
 import { definePageMeta } from '#imports'
 import type { FormError } from '#ui/types'
 
@@ -50,7 +50,7 @@ const { status, execute } = useFetch(`v1/auth/login`, {
     }
   },
   onResponseError({ response }) {
-    Notify.failure(response._data?.message ?? 'Có lỗi khi đăng nhập')
+    Notiflix.Notify.failure(response._data?.message ?? 'Có lỗi khi đăng nhập')
   }
 })
 
