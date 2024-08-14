@@ -6,6 +6,7 @@ export const useReLogin = () => {
   return $fetch<{ access_token: string, refresh_token: string }>(`v1/auth/refresh`, {
     method: 'POST',
     baseURL: config.public.apiUrl,
+    credentials: 'include',
     body: {
       refresh_token: refreshToken.value
     }

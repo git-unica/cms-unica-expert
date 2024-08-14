@@ -1,15 +1,10 @@
 import { defineStore } from 'pinia'
-import type { Ref } from 'vue'
 import type { User } from '~/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const config = useRuntimeConfig()
-  const accessToken: Ref<string | undefined> = ref()
-  const refreshToken = useCookie('refreshToken', {
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
-    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) // 1 month
-  })
+  const accessToken = useCookie('accessToken')
+  const refreshToken = useCookie('refreshToken')
 
   const user = ref<User | undefined>()
 
@@ -36,10 +31,6 @@ export const useAuthStore = defineStore('auth', () => {
   async function getUserInfo() {
     try {
       user.value = await $fetch<User>('/v1/users/me', {
-        method: 'GET',
-        query: {
-          v: Date.now()
-        },
         baseURL: config.public.apiUrl,
         headers: { Authorization: `Bearer ${accessToken.value}` }
       })

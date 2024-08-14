@@ -37,14 +37,13 @@ const { status, execute } = useFetch(`v1/auth/login`, {
   headers: {
     Authorization: `Bearer ${accessToken.value}`
   },
+  credentials: 'include',
   baseURL: config.public.apiUrl,
   immediate: false,
   lazy: true,
   body: { username, password },
   onResponse: async ({ response }) => {
     if (response.ok) {
-      authStore.setAccessToken(response._data.access_token)
-      authStore.setRefreshToken(response._data.refresh_token)
       await authStore.getUserInfo()
       await navigateTo('/')
     }
