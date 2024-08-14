@@ -22,7 +22,12 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken.value = token
   }
 
-  const logout = () => {
+  const logout = async () => {
+    await $fetch('/v1/auth/logout', {
+      baseURL: config.public.apiUrl,
+      credentials: 'include'
+    })
+
     accessToken.value = undefined
     user.value = undefined
     refreshToken.value = undefined
