@@ -3,8 +3,20 @@ import type { User } from '~/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const config = useRuntimeConfig()
-  const accessToken = useCookie('accessToken', { domain: config.public.domain })
-  const refreshToken = useCookie('refreshToken', { domain: config.public.domain })
+  const accessToken = useCookie('accessToken', {
+    domain: config.public.domain,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : false,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 60 * 60 * 24
+  })
+  const refreshToken = useCookie('refreshToken', {
+    domain: config.public.domain,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : false,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 60 * 60 * 24 * 30
+  })
 
   const user = ref<User | undefined>()
 
