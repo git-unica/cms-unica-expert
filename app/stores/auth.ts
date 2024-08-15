@@ -58,12 +58,13 @@ export const useAuthStore = defineStore('auth', () => {
 }, {
   persist: {
     paths: [
-      'accessToken', 'user'
+      'user'
     ],
     storage: persistedState.cookiesWithOptions({
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : false,
       secure: process.env.NODE_ENV === 'production',
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 0.5) // half day
+      httpOnly: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24
     })
   }
 })
