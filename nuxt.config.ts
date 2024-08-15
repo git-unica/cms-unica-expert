@@ -13,7 +13,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
-      apiUrl: process.env.NUXT_API_URL || 'http://localhost:3333'
+      apiUrl: process.env.NUXT_API_URL || 'http://localhost:3333',
+      domain: process.env.NUXT_DOMAIN || 'localhost'
     }
   },
   ui: {

@@ -3,8 +3,8 @@ import type { User } from '~/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const config = useRuntimeConfig()
-  const accessToken = useCookie('accessToken')
-  const refreshToken = useCookie('refreshToken')
+  const accessToken = useCookie('accessToken', { domain: config.public.domain })
+  const refreshToken = useCookie('refreshToken', { domain: config.public.domain })
 
   const user = ref<User | undefined>()
 

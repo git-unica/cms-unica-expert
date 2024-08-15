@@ -7,7 +7,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (!refreshToken.value) return navigateTo('/login')
 
     try {
-      await useReLogin()
+      const res = await useReLogin()
+      authStore.setAccessToken(res.access_token)
+      authStore.setRefreshToken(res.refresh_token)
       await authStore.getUserInfo()
     } catch (e) {
       console.log(e)

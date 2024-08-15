@@ -44,6 +44,8 @@ const { status, execute } = useFetch(`v1/auth/login`, {
   body: { username, password },
   onResponse: async ({ response }) => {
     if (response.ok) {
+      authStore.setAccessToken(response._data.access_token)
+      authStore.setRefreshToken(response._data.refresh_token)
       await authStore.getUserInfo()
       await navigateTo('/')
     }
