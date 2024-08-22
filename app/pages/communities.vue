@@ -90,6 +90,14 @@ const onUpdateStatus = async (row: Community, status: (typeof ECommunityStatus)[
   })
 }
 
+const deleteCommunity = async (row: Community) => {
+  await $fetch(`/v1/community/${row._id}`, {
+    method: 'DELETE',
+    baseURL: config.public.apiUrl,
+    headers: { Authorization: `Bearer ${accessToken.value}` }
+  })
+}
+
 defineShortcuts({
   '/': () => {
     input.value?.input?.focus()
@@ -175,37 +183,47 @@ defineShortcuts({
           {{ $dayjs(row.created_at).format('HH:mm DD/MM/YYYY') }}
         </template>
         <template #[`action-data`]="{ row }">
-          <UTooltip text="Truy cập cộng đồng">
-            <UButton
-              :to="`${config.public.frontendUrl}/community/@${row.short_name ?? row._id}`"
-              :ui="{ rounded: 'rounded-full' }"
-              class="mr-1"
-              icon="i-heroicons-link-solid"
-              target="_blank"
-            />
-          </UTooltip>
-          <UTooltip
-            v-if="row.status === ECommunityStatus.NotActivated"
-            text="Chuyển thành Công Khai"
-          >
-            <UButton
-              :ui="{ rounded: 'rounded-full' }"
-              color="green"
-              icon="i-heroicons-lock-open"
-              @click="onUpdateStatus(row, ECommunityStatus.Public)"
-            />
-          </UTooltip>
-          <UTooltip
-            v-else
-            text="Chuyển thành Chưa kích hoạt"
-          >
-            <UButton
-              :ui="{ rounded: 'rounded-full' }"
-              color="rose"
-              icon="i-heroicons-lock-closed"
-              @click="onUpdateStatus(row, ECommunityStatus.NotActivated)"
-            />
-          </UTooltip>
+          <div class="flex gap-1">
+            <UTooltip text="Truy cập cộng đồng">
+              <UButton
+                :to="`${config.public.frontendUrl}/community/@${row.short_name ?? row._id}`"
+                :ui="{ rounded: 'rounded-full' }"
+                icon="i-heroicons-link-solid"
+                target="_blank"
+              />
+            </UTooltip>
+            <UTooltip
+              v-if="row.status === ECommunityStatus.NotActivated"
+              text="Chuyển thành Công Khai"
+            >
+              <UButton
+                :ui="{ rounded: 'rounded-full' }"
+                color="green"
+                icon="i-heroicons-lock-open"
+                @click="onUpdateStatus(row, ECommunityStatus.Public)"
+              />
+            </UTooltip>
+            <UTooltip
+              v-else
+              text="Chuyển thành Chưa kích hoạt"
+            >
+              <UButton
+                :ui="{ rounded: 'rounded-full' }"
+                color="rose"
+                icon="i-heroicons-lock-closed"
+                @click="onUpdateStatus(row, ECommunityStatus.NotActivated)"
+              />
+            </UTooltip>
+
+            <UTooltip text="Xóa cộng đồng">
+              <UButton
+                :ui="{ rounded: 'rounded-full' }"
+                icon="i-heroicons-trash"
+                color="red"
+                @click="deleteCommunity(row)"
+              />
+            </UTooltip>
+          </div>
         </template>
       </UTable>
       <UDivider />
