@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { Community, IResponsePagination } from '~/types'
 import { ECommunityStatus, LabelCommunityStatus } from '~/enums/community-status.enum'
+import {row} from "@unovis/ts/components/timeline/style";
 
 const defaultColumns = [
   {
@@ -89,14 +90,40 @@ const onUpdateStatus = async (row: Community, status: (typeof ECommunityStatus)[
     }
   })
 }
-
-const deleteCommunity = async (row: Community) => {
-  await $fetch(`/v1/community/${row._id}`, {
-    method: 'DELETE',
-    baseURL: config.public.apiUrl,
-    headers: { Authorization: `Bearer ${accessToken.value}` }
-  })
+interface DeleteCommunityResponse {
+  message: string
+  statusCode: number
+  data: Record<string, unknown>
 }
+const communitySelected = ref<Community | null>(null)
+const isOpen = ref(false)
+const openModal = (row: Community) => {
+  communitySelected.value = row
+  isOpen.value = true
+}
+const deleteCommunity = async () => {
+  try {
+    const response: DeleteCommunityResponse = await $fetch(`/v1/community/${communitySelected.value._id}`, {
+      method: 'DELETE',
+      baseURL: config.public.apiUrl,
+      headers: { Authorization: `Bearer ${accessToken.value}` }
+    })
+
+    if (response.statusCode === 200) {
+      console.log(response.message)
+      refresh()
+      toast.add({ title: response.message, color: 'green' })
+    } else if (response.statusCode === 500) {
+      toast.add({ title: 'Không thể xóa cộng đồng', color: 'red' })
+    } else {
+      toast.add({ title: 'Đã xảy ra lỗi', color: 'red' })
+    }
+  } catch (error) {
+    console.error('Error deleting community:', error)
+    toast.add({ title: 'Có lỗi xảy ra trong quá trình xóa', color: 'red' })
+  }
+}
+
 
 defineShortcuts({
   '/': () => {
@@ -220,9 +247,23 @@ defineShortcuts({
                 :ui="{ rounded: 'rounded-full' }"
                 icon="i-heroicons-trash"
                 color="red"
-                @click="deleteCommunity(row)"
+                @click="openModal(row)"
               />
             </UTooltip>
+            <UModal v-model="isOpen">
+              <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+                <div class="text-center">
+                  <p>Bạn có muốn xóa cộng đồng {{communitySelected.name}} ? </p>
+                </div>
+
+                <template #footer>
+                  <div class="flex justify-end space-x-2">
+                    <UButton color="red" @click="deleteCommunity()">Có</UButton>
+                    <UButton color="gray" @click="isOpen = false">Không</UButton>
+                  </div>
+                </template>
+              </UCard>
+            </UModal>
           </div>
         </template>
       </UTable>
