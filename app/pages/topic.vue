@@ -213,7 +213,7 @@ defineShortcuts({
         <template #[`icon-data`]="{ row }">
           <NuxtImg
             v-if="row.icon"
-            :src="`/storage/${row.icon}`"
+            :src="`${useRequestURL().origin}/storage/${row.icon}`"
             placeholder="https://placehold.co/30"
             width="30"
           />
@@ -271,7 +271,7 @@ defineShortcuts({
         >
           <NuxtImg
             v-if="editRow.icon || editIconBase64"
-            :src="editIcon ? editIconBase64 : `/storage/${editRow.icon}`"
+            :src="editIcon ? editIconBase64 : `${useRequestURL().origin}/storage/${editRow.icon}`"
             alt=""
             class="max-w-full max-h-60"
           />
