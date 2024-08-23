@@ -31,6 +31,16 @@ const links = [{
     shortcuts: ['G', 'C']
   }
 }, {
+  id: 'topic',
+  label: 'Chủ đề',
+  icon: 'i-heroicons-rectangle-group',
+  to: '/topic',
+  tooltip: {
+    text: 'Chủ đề',
+    shortcuts: ['G', 'T']
+  }
+},
+{
   id: 'level',
   label: 'Cấp độ thành viên',
   icon: 'i-heroicons-rectangle-stack',
