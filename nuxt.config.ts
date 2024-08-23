@@ -8,7 +8,8 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@pinia/nuxt',
     '@pinia-plugin-persistedstate/nuxt',
-    'dayjs-nuxt'
+    'dayjs-nuxt',
+    '@nuxt/image'
   ],
   runtimeConfig: {
     public: {

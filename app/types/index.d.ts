@@ -25,6 +25,15 @@ export interface Level {
   deleted_at?: string
 }
 
+export interface Topic {
+  _id: string
+  title: string
+  icon?: string
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+}
+
 export interface Community {
   _id: string
   name: string
