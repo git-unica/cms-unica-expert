@@ -1,7 +1,8 @@
 <script lang="ts" setup>
+import type { ECommunityType } from '../enums/community-type.enum'
+import { LabelCommunityType } from '../enums/community-type.enum'
 import type { Community, IResponsePagination } from '~/types'
-import { ECommunityStatus, LabelCommunityStatus } from '~/enums/community-status.enum'
-import {row} from "@unovis/ts/components/timeline/style";
+import { LabelCommunityStatus } from '~/enums/community-status.enum'
 
 const defaultColumns = [
   {
@@ -17,6 +18,10 @@ const defaultColumns = [
   {
     key: 'status',
     label: 'Trạng thái'
+  },
+  {
+    key: 'type',
+    label: 'Kiểu'
   },
   {
     key: 'created_at',
@@ -39,15 +44,18 @@ const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const sortTable = ref({ column: '_id', direction: 'desc' } as const)
 const input = ref<{ input: HTMLInputElement }>()
 const page = ref(1)
-const filterStatus = ref(ECommunityStatus.NotActivated)
+const filterStatus = ref()
+const filterType = ref()
 const query = reactive({
   'filter[keyword]': keyword,
   'filter[status]': filterStatus,
+  'filter[type]': filterType,
   page
 })
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
 const statusOptions = computed(() => Object.keys(LabelCommunityStatus).map(key => ({ value: key, name: LabelCommunityStatus[key] })))
+const typeOptions = computed(() => Object.keys(LabelCommunityType).map(key => ({ value: key, name: LabelCommunityType[key] })))
 
 watch(sortTable, (newValue) => {
   for (const key in query) {
@@ -60,7 +68,18 @@ watch(sortTable, (newValue) => {
 
 const { data: communities, status, refresh } = await useFetch<IResponsePagination<Community>>('/v1/community', {
   query,
-  baseURL: config.public.apiUrl
+  baseURL: config.public.apiUrl,
+  default: () => ({
+    meta: {
+      page: 0,
+      take: 10,
+      itemCount: 0,
+      pageCount: 0,
+      hasPreviousPage: false,
+      hasNextPage: false
+    },
+    data: []
+  })
 })
 
 function onSelect(row: Community) {
@@ -72,18 +91,18 @@ function onSelect(row: Community) {
   }
 }
 
-const onUpdateStatus = async (row: Community, status: (typeof ECommunityStatus)[keyof typeof ECommunityStatus]) => {
+const onUpdateType = async (row: Community, type: (typeof ECommunityType)[keyof typeof ECommunityType]) => {
   await $fetch(`/v1/community/${row._id}`, {
     method: 'PATCH',
     baseURL: config.public.apiUrl,
     headers: { Authorization: `Bearer ${accessToken.value}` },
     body: {
-      status
+      type
     },
     onResponse({ response }) {
       if (response.ok) {
         refresh()
-        toast.add({ title: 'Cập nhật trạng thái thành công', color: 'green' })
+        toast.add({ title: 'Cập nhật kiểu thành công', color: 'green' })
       } else {
         toast.add({ title: 'Có lỗi khi thao tác', color: 'red' })
       }
@@ -110,8 +129,7 @@ const deleteCommunity = async () => {
     })
 
     if (response.statusCode === 200) {
-      console.log(response.message)
-      refresh()
+      await refresh()
       toast.add({ title: response.message, color: 'green' })
     } else if (response.statusCode === 500) {
       toast.add({ title: 'Không thể xóa cộng đồng', color: 'red' })
@@ -123,7 +141,6 @@ const deleteCommunity = async () => {
     toast.add({ title: 'Có lỗi xảy ra trong quá trình xóa', color: 'red' })
   }
 }
-
 
 defineShortcuts({
   '/': () => {
@@ -164,6 +181,13 @@ defineShortcuts({
             class="hidden lg:block"
             option-attribute="name"
             placeholder="Trạng thái"
+          />
+          <USelect
+            v-model="filterType"
+            :options="typeOptions"
+            class="hidden lg:block"
+            option-attribute="name"
+            placeholder="Kiểu"
           />
         </template>
         <template #right>
@@ -206,6 +230,15 @@ defineShortcuts({
         <template #[`status-data`]="{ row }">
           {{ LabelCommunityStatus[row.status] }}
         </template>
+        <template #[`type-data`]="{ row }">
+          <USelect
+            v-model="row.type"
+            :options="typeOptions"
+            option-attribute="name"
+            placeholder="Kiểu"
+            @change="onUpdateType(row, $event)"
+          />
+        </template>
         <template #[`created_at-data`]="{ row }">
           {{ $dayjs(row.created_at).format('HH:mm DD/MM/YYYY') }}
         </template>
@@ -219,47 +252,35 @@ defineShortcuts({
                 target="_blank"
               />
             </UTooltip>
-            <UTooltip
-              v-if="row.status === ECommunityStatus.NotActivated"
-              text="Chuyển thành Công Khai"
-            >
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
-                color="green"
-                icon="i-heroicons-lock-open"
-                @click="onUpdateStatus(row, ECommunityStatus.Public)"
-              />
-            </UTooltip>
-            <UTooltip
-              v-else
-              text="Chuyển thành Chưa kích hoạt"
-            >
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
-                color="rose"
-                icon="i-heroicons-lock-closed"
-                @click="onUpdateStatus(row, ECommunityStatus.NotActivated)"
-              />
-            </UTooltip>
 
             <UTooltip text="Xóa cộng đồng">
               <UButton
                 :ui="{ rounded: 'rounded-full' }"
-                icon="i-heroicons-trash"
                 color="red"
+                icon="i-heroicons-trash"
                 @click="openModal(row)"
               />
             </UTooltip>
             <UModal v-model="isOpen">
               <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
                 <div class="text-center">
-                  <p>Bạn có muốn xóa cộng đồng {{communitySelected.name}} ? </p>
+                  <p>Bạn có muốn xóa cộng đồng {{ communitySelected.name }} ? </p>
                 </div>
 
                 <template #footer>
                   <div class="flex justify-end space-x-2">
-                    <UButton color="red" @click="deleteCommunity()">Có</UButton>
-                    <UButton color="gray" @click="isOpen = false">Không</UButton>
+                    <UButton
+                      color="red"
+                      @click="deleteCommunity()"
+                    >
+                      Có
+                    </UButton>
+                    <UButton
+                      color="gray"
+                      @click="isOpen = false"
+                    >
+                      Không
+                    </UButton>
                   </div>
                 </template>
               </UCard>

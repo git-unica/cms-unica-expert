@@ -1,5 +1,6 @@
 import type { ERole } from '~/enums/role.enum'
 import type { ECommunityStatus } from '~/enums/community-status.enum'
+import type { ECommunityType } from '~/enums/community-type.enum'
 
 export interface User {
   _id: string
@@ -39,6 +40,7 @@ export interface Community {
   name: string
   short_name: string
   status: (typeof ECommunityStatus)[keyof typeof ECommunityStatus]
+  type: (typeof ECommunityType)[keyof typeof ECommunityType]
   topic_id: string
   owner_id: string
   auto_pay_package?: boolean
