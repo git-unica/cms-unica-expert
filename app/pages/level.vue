@@ -48,18 +48,18 @@ const schema = object({
     .required('Không được trống')
 })
 
-const { data: allLevel, status, refresh } = await useFetch<Level[]>('/v1/level', {
-  baseURL: config.public.apiUrl,
+const { data: allLevel, status, refresh } = await useFetch<Level[]>('/api/v1/level', {
+  credentials: 'include',
   headers: { Authorization: `Bearer ${accessToken.value}` }
 })
 
 const onUpdate = async () => {
   if (!editRow.value) return
 
-  await $fetch(`v1/level`, {
+  await $fetch(`/api/v1/level`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken.value}` },
-    baseURL: config.public.apiUrl,
+    credentials: 'include',
     body: {
       level_id: editRow.value._id,
       title: editRow.value.name,
@@ -79,10 +79,10 @@ const onUpdate = async () => {
 }
 
 const onAdd = async () => {
-  await $fetch(`v1/level`, {
+  await $fetch(`/api/v1/level`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken.value}` },
-    baseURL: config.public.apiUrl,
+    credentials: 'include',
     body: {
       title: newRow.value.name,
       point: newRow.value.point
@@ -111,10 +111,10 @@ const onConfirmDelete = (row: Level) => {
 }
 
 const onDelete = async (row: Level) => {
-  await $fetch(`v1/level/${row._id}`, {
+  await $fetch(`/api/v1/level/${row._id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken.value}` },
-    baseURL: config.public.apiUrl,
+    credentials: 'include',
     onResponse({ response }) {
       if (response.ok) {
         refresh()

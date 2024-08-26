@@ -26,19 +26,19 @@ const validate = (state: any) => {
   if (!state.password) errors.push({ path: 'password', message: 'Mật khẩu không để trống' })
   return errors
 }
-const config = useRuntimeConfig()
 const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
+const { accessToken, isLogin } = storeToRefs(authStore)
 const username = ref()
 const password = ref()
 
-const { status, execute } = useFetch(`v1/auth/login`, {
+if (isLogin.value) navigateTo('/')
+
+const { status, execute } = useFetch(`/api/v1/auth/login`, {
   method: 'POST',
   headers: {
     Authorization: `Bearer ${accessToken.value}`
   },
   credentials: 'include',
-  baseURL: config.public.apiUrl,
   immediate: false,
   lazy: true,
   body: { username, password },
@@ -47,7 +47,8 @@ const { status, execute } = useFetch(`v1/auth/login`, {
       authStore.setAccessToken(response._data.access_token)
       authStore.setRefreshToken(response._data.refresh_token)
       await authStore.getUserInfo()
-      await navigateTo('/')
+
+      navigateTo('/')
     }
   },
   onResponseError({ response }) {

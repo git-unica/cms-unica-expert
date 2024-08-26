@@ -56,10 +56,10 @@ async function onSubmit(event: FormSubmitEvent<User>) {
   if (phone.value) formData.append('phone', phone.value)
   if (avatar.value) formData.append('avatar', avatar.value)
 
-  await $fetch(`/v1/users/me`, {
+  await $fetch(`/api/v1/users/me`, {
     method: 'PATCH',
     body: formData,
-    baseURL: config.public.apiUrl,
+    credentials: 'include',
     headers: {
       Authorization: `Bearer ${accessToken.value}`
     },

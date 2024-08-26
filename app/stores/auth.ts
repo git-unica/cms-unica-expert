@@ -2,28 +2,20 @@ import { defineStore } from 'pinia'
 import type { User } from '~/types'
 
 export const useAuthStore = defineStore('auth', () => {
-  const config = useRuntimeConfig()
-  const accessToken = useCookie('accessToken', {
-    domain: config.public.domain,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : false,
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24
-  })
-  const refreshToken = useCookie('refreshToken', {
-    domain: config.public.domain,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : false,
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24 * 30
-  })
-
+  const { clear } = useNestSession()
+  const accessToken = ref<string>()
+  const refreshToken = ref<string>()
+  const userId = ref<string>()
   const user = ref<User | undefined>()
 
-  const isLogin = computed(() => !!user.value && !!accessToken.value)
+  const isLogin = computed(() => !!userId.value && !!accessToken.value)
 
   const setAccessToken = (token?: string) => {
     accessToken.value = token
+  }
+
+  const setUserId = (id: string) => {
+    userId.value = id
   }
 
   const setUserInfo = (userInfo: User) => {
@@ -35,20 +27,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async () => {
-    await $fetch('/v1/auth/logout', {
-      baseURL: config.public.apiUrl,
-      credentials: 'include'
-    })
-
     accessToken.value = undefined
+    userId.value = undefined
     user.value = undefined
     refreshToken.value = undefined
+
+    await clear()
   }
 
   async function getUserInfo() {
     try {
-      user.value = await $fetch<User>('/v1/users/me', {
-        baseURL: config.public.apiUrl,
+      user.value = await $fetch<User>('/api/v1/users/me', {
         headers: { Authorization: `Bearer ${accessToken.value}` }
       })
     } catch (e) {
@@ -61,22 +50,11 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken,
     setAccessToken,
     setRefreshToken,
+    setUserId,
     setUserInfo,
     user,
     isLogin,
     logout,
     getUserInfo
-  }
-}, {
-  persist: {
-    paths: [
-      'user'
-    ],
-    storage: persistedState.cookiesWithOptions({
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : false,
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24
-    })
   }
 })

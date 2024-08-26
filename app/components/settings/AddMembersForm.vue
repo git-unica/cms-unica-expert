@@ -25,8 +25,8 @@ const validate = (state: any): FormError[] => {
 }
 
 async function onSubmit(event: FormSubmitEvent<any>) {
-  const users = await $fetch<IResponsePagination<User>>(`/v1/users`, {
-    baseURL: config.public.apiUrl,
+  const users = await $fetch<IResponsePagination<User>>(`/api/v1/users`, {
+    credentials: 'include',
     query: {
       keyword: event.data.email
     },
@@ -45,12 +45,12 @@ async function onSubmit(event: FormSubmitEvent<any>) {
     return
   }
 
-  await $fetch(`/v1/users/${existUser._id}/roles`, {
+  await $fetch(`/api/v1/users/${existUser._id}/roles`, {
     method: 'PATCH',
     body: {
       roles: event.data.roles
     },
-    baseURL: config.public.apiUrl,
+    credentials: 'include',
     headers: { Authorization: `Bearer ${accessToken.value}` },
     onResponse({ response }) {
       if (response.ok) {

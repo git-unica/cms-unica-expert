@@ -39,8 +39,8 @@ const items = computed(() => [
   }], [{
     label: 'Đăng xuất',
     icon: 'i-heroicons-arrow-left-on-rectangle',
-    click: () => {
-      authStore.logout()
+    click: async () => {
+      await authStore.logout()
       navigateTo('/login')
     }
   }]
@@ -58,14 +58,14 @@ const items = computed(() => [
     <template #default="{ open }">
       <UButton
         :class="[open && 'bg-gray-50 dark:bg-gray-800']"
-        :label="user.full_name"
+        :label="user?.full_name"
         class="w-full"
         color="gray"
         variant="ghost"
       >
         <template #leading>
           <UAvatar
-            :src="user.avatar"
+            :src="user?.avatar"
             size="2xs"
           />
         </template>

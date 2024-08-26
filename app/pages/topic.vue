@@ -57,9 +57,9 @@ const schema = object({
   title: string().required('Không được trống')
 })
 
-const { data: pageTopic, status, refresh } = await useFetch<IResponsePagination<Topic>>('/v1/topic', {
+const { data: pageTopic, status, refresh } = await useFetch<IResponsePagination<Topic>>('/api/v1/topic', {
   query,
-  baseURL: config.public.apiUrl,
+  credentials: 'include',
   headers: { Authorization: `Bearer ${accessToken.value}` },
   default: () => ({
     meta: {
@@ -89,10 +89,10 @@ const onUpdate = async () => {
   formData.append('title', editRow.value.title)
   formData.append('icon', editIcon.value)
 
-  await $fetch(`v1/topic/${editRow.value._id}`, {
+  await $fetch(`/api/v1/topic/${editRow.value._id}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${accessToken.value}` },
-    baseURL: config.public.apiUrl,
+    credentials: 'include',
     body: formData,
     onResponse({ response }) {
       if (response.ok) {
@@ -112,10 +112,10 @@ const onAdd = async () => {
   formData.append('title', newRow.value.title)
   formData.append('icon', createIcon.value)
 
-  await $fetch(`v1/topic`, {
+  await $fetch(`/api/v1/topic`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken.value}` },
-    baseURL: config.public.apiUrl,
+    credentials: 'include',
     body: formData,
     onResponse({ response }) {
       if (response.ok) {
@@ -141,10 +141,10 @@ const onConfirmDelete = (row: Topic) => {
 }
 
 const onDelete = async (row: Topic) => {
-  await $fetch(`v1/topic/${row._id}`, {
+  await $fetch(`/api/v1/topic/${row._id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken.value}` },
-    baseURL: config.public.apiUrl,
+    credentials: 'include',
     onResponse({ response }) {
       if (response.ok) {
         refresh()

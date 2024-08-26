@@ -50,9 +50,9 @@ watch(sortTable, (newValue) => {
   query[`sort[${newValue.column}]`] = newValue.direction === 'desc' ? -1 : 1
 })
 
-const { data: users, status } = await useFetch<IResponsePagination<User>>('/v1/users', {
+const { data: users, status } = await useFetch<IResponsePagination<User>>('/api/v1/users', {
   query,
-  baseURL: config.public.apiUrl,
+  credentials: 'include',
   headers: { Authorization: `Bearer ${accessToken.value}` },
   lazy: true,
   default: () => ({

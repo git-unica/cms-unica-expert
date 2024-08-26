@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import type { ECommunityType } from '../enums/community-type.enum'
-import { LabelCommunityType } from '../enums/community-type.enum'
+import type { ECommunityType } from '~/enums/community-type.enum'
+import { LabelCommunityType } from '~/enums/community-type.enum'
 import type { Community, IResponsePagination } from '~/types'
 import { LabelCommunityStatus } from '~/enums/community-status.enum'
 
@@ -66,9 +66,8 @@ watch(sortTable, (newValue) => {
   query[`sort[${newValue.column}]`] = newValue.direction === 'desc' ? -1 : 1
 })
 
-const { data: communities, status, refresh } = await useFetch<IResponsePagination<Community>>('/v1/community', {
+const { data: communities, status, refresh } = await useFetch<IResponsePagination<Community>>('/api/v1/community', {
   query,
-  baseURL: config.public.apiUrl,
   default: () => ({
     meta: {
       page: 0,
@@ -92,9 +91,8 @@ function onSelect(row: Community) {
 }
 
 const onUpdateType = async (row: Community, type: (typeof ECommunityType)[keyof typeof ECommunityType]) => {
-  await $fetch(`/v1/community/${row._id}`, {
+  await $fetch(`/api/v1/community/${row._id}`, {
     method: 'PATCH',
-    baseURL: config.public.apiUrl,
     headers: { Authorization: `Bearer ${accessToken.value}` },
     body: {
       type
@@ -122,9 +120,8 @@ const openModal = (row: Community) => {
 }
 const deleteCommunity = async () => {
   try {
-    const response: DeleteCommunityResponse = await $fetch(`/v1/community/${communitySelected.value._id}`, {
+    const response: DeleteCommunityResponse = await $fetch(`/api/v1/community/${communitySelected.value._id}`, {
       method: 'DELETE',
-      baseURL: config.public.apiUrl,
       headers: { Authorization: `Bearer ${accessToken.value}` }
     })
 

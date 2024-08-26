@@ -42,8 +42,8 @@ const {
   data: members,
   status: statusMembers,
   refresh: refreshMembers
-} = useFetch<IResponsePagination<User>>('v1/users', {
-  baseURL: config.public.apiUrl,
+} = useFetch<IResponsePagination<User>>('/api/v1/users', {
+  credentials: 'include',
   headers: { Authorization: `Bearer ${accessToken.value}` },
   query: {
     keyword,
@@ -74,15 +74,15 @@ const findRole = (id: string) => {
 
 const onDelete = async () => {
   deleting.value = true
-  await $fetch(`v1/users/${removeMember.value._id}`, {
+  await $fetch(`/api/v1/users/${removeMember.value._id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken.value}` },
-    baseURL: config.public.apiUrl,
-    onResponse({ response }) {
+    credentials: 'include',
+    async onResponse({ response }) {
       if (response.ok) {
         if (removeMember.value._id === user.value._id) {
-          authStore.logout()
-          navigateTo('/')
+          await authStore.logout()
+          navigateTo('/login')
         }
 
         const idx = members.value.data.findIndex(m => m._id === removeMember.value._id)

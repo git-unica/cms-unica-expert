@@ -13,12 +13,11 @@ const selectRoles = computed(() => props.roles.map(role => ({ id: role._id, name
 const requestRefreshMembers = ref(false)
 
 async function onSubmit(event: FormSubmitEvent<User>) {
-  await $fetch(`/v1/users/${event.data._id}/roles`, {
+  await $fetch(`/api/v1/users/${event.data._id}/roles`, {
     method: 'PATCH',
     body: {
       roles: event.data.roles
     },
-    baseURL: config.public.apiUrl,
     headers: { Authorization: `Bearer ${accessToken.value}` },
     onResponse({ response }) {
       if (response.ok) {

@@ -3,7 +3,6 @@ const model = defineModel({
   type: Boolean
 })
 
-const config = useRuntimeConfig()
 const toast = useToast()
 const authStore = useAuthStore()
 const { accessToken } = storeToRefs(authStore)
@@ -13,14 +12,14 @@ const onDelete = async () => {
   loading.value = true
 
   try {
-    const res = await $fetch.raw(`v1/users/me`, {
+    const res = await $fetch.raw(`/api/v1/users/me`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${accessToken.value}` },
-      baseURL: config.public.apiUrl
+      credentials: 'include'
     })
 
     if (res.ok) {
-      authStore.logout()
+      await authStore.logout()
       await navigateTo('login')
     } else {
       toast.add({ icon: 'i-heroicons-check-circle', title: 'Tài khoản chưa được xoá', color: 'red' })
