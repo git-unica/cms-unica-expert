@@ -38,8 +38,9 @@ const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
 const editRow = ref<Topic>()
 const isOpenAddModal = ref(false)
-const newRow = ref<Topic>({
-  title: ''
+const newRow = ref({
+  title: undefined,
+  prefix: undefined
 })
 const q = ref()
 const keyword = refDebounced(q, 500)
