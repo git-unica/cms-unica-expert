@@ -3,7 +3,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const authStore = useAuthStore()
   const { isLogin, refreshToken } = storeToRefs(authStore)
-  if (!isLogin.value && refreshToken.value) {
+  const { session } = useNestSession()
+  if (!isLogin.value && !session.value.isAuthenticated && refreshToken.value) {
     try {
       await useReLogin(refreshToken.value)
     } catch (e) {
