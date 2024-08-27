@@ -30,6 +30,7 @@ export interface Topic {
   _id: string
   title: string
   icon?: string
+  prefix?: string
   created_at: string
   updated_at: string
   deleted_at?: string

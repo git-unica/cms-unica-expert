@@ -12,7 +12,12 @@ const defaultColumns = [
   },
   {
     key: 'icon',
-    label: 'Icon'
+    label: 'Icon',
+    hidden: true
+  },
+  {
+    key: 'prefix',
+    label: 'Prefix'
   },
   {
     key: 'title',
@@ -26,7 +31,6 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
-const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { accessToken } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
@@ -34,7 +38,7 @@ const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
 const editRow = ref<Topic>()
 const isOpenAddModal = ref(false)
-const newRow = ref({
+const newRow = ref<Topic>({
   title: ''
 })
 const q = ref()
@@ -87,6 +91,7 @@ const onUpdate = async () => {
 
   const formData = new FormData()
   formData.append('title', editRow.value.title)
+  formData.append('prefix', editRow.value.prefix)
   formData.append('icon', editIcon.value)
 
   await $fetch(`/api/v1/topic/${editRow.value._id}`, {
@@ -110,6 +115,7 @@ const onUpdate = async () => {
 const onAdd = async () => {
   const formData = new FormData()
   formData.append('title', newRow.value.title)
+  formData.append('prefix', newRow.value.prefix)
   formData.append('icon', createIcon.value)
 
   await $fetch(`/api/v1/topic`, {
@@ -257,11 +263,20 @@ defineShortcuts({
         @submit="onUpdate"
       >
         <UFormGroup
-          label="Chủ đề"
+          label="Prefix / Chủ đề"
           name="title"
           required
         >
-          <UInput v-model="editRow.title" />
+          <div class="grid grid-flow-row-dense lg:grid-cols-4 gap-2">
+            <UInput
+              v-model="editRow.prefix"
+              class="col-span-1"
+            />
+            <UInput
+              v-model="editRow.title"
+              class="col-span-3"
+            />
+          </div>
         </UFormGroup>
 
         <UFormGroup
