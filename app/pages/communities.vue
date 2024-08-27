@@ -107,43 +107,33 @@ const onUpdateType = async (row: Community, type: (typeof ECommunityType)[keyof 
     }
   })
 }
-interface DeleteCommunityResponse {
-  message: string
-  statusCode: number
-  data: Record<string, unknown>
-}
+
 const communitySelected = ref<Community | null>(null)
 const isOpen = ref(false)
 const openModal = (row: Community) => {
   communitySelected.value = row
   isOpen.value = true
 }
+
 const deleteCommunity = async () => {
   try {
-    const response: DeleteCommunityResponse = await $fetch(`/api/v1/community/${communitySelected.value._id}`, {
+    // Make the DELETE request to the API
+    const response = await $fetch(`/api/v1/community/${communitySelected.value._id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${accessToken.value}` }
     })
-
-    if (response.statusCode === 200) {
+    if (response.status === 200) {
       await refresh()
       toast.add({ title: response.message, color: 'green' })
-    } else if (response.statusCode === 500) {
-      toast.add({ title: 'Không thể xóa cộng đồng', color: 'red' })
+    } else if (response.status === 500) {
+      toast.add({ title: response.message, color: 'red' })
     } else {
-      toast.add({ title: 'Đã xảy ra lỗi', color: 'red' })
+      toast.add({ title: response.message, color: 'green' })
     }
   } catch (error) {
-    console.error('Error deleting community:', error)
-    toast.add({ title: 'Có lỗi xảy ra trong quá trình xóa', color: 'red' })
+    toast.add({ title: 'Không có quyền xóa cộng đồng', color: 'red' })
   }
 }
-
-defineShortcuts({
-  '/': () => {
-    input.value?.input?.focus()
-  }
-})
 </script>
 
 <template>
