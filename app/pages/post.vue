@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { number, object, string } from 'yup'
 import Notiflix from 'notiflix'
+import slugify from 'slugify'
 import type { IResponsePagination, Post } from '~/types'
 import { EStatusPost } from '~/enums/status-post.enum'
 
@@ -28,8 +29,6 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
-const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
@@ -43,6 +42,7 @@ const newRow = ref({
   title: undefined,
   description: undefined,
   status: EStatusPost.Draft,
+  slug: undefined,
   seo: {
     title: undefined,
     description: undefined
@@ -59,9 +59,10 @@ const query = reactive({
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
 
 const schema = object({
-  title: string().required('Không được trống'),
-  description: string().required('Không được trống'),
-  status: number().required('Trạng thái cần được chọn').oneOf(Object.values(EStatusPost))
+  title: string().required('Không để trống'),
+  description: string().required('Không để trống'),
+  status: number().required('Trạng thái cần được chọn').oneOf(Object.values(EStatusPost)),
+  slug: string().required('Không để trống')
 })
 
 const { data: pagePost, status, refresh } = await useLazyFetch<IResponsePagination<Post>>('/api/v1/posts', {
@@ -81,6 +82,10 @@ const { data: pagePost, status, refresh } = await useLazyFetch<IResponsePaginati
   })
 })
 
+watch(() => newRow.value.title, (newValue) => {
+  newRow.value.slug = slugify(newValue, { locale: 'vi', lower: true })
+})
+
 const onUpdate = async () => {
   if (!editRow.value) return
 
@@ -88,10 +93,13 @@ const onUpdate = async () => {
     method: 'PATCH',
     headers: useRequestHeaders(['cookie']),
     body: { ...editRow.value, seo: editSeo },
-    onResponse({ response }) {
+    async onResponse({ response }) {
       if (response.ok) {
-        refresh()
+        await refresh()
         isOpenEditModal.value = false
+        editRow.value = undefined
+        editSeo.title = undefined
+        editSeo.description = undefined
 
         toast.add({ title: 'Cập nhật bài viết thành công', color: 'green' })
       } else {
@@ -104,11 +112,11 @@ const onUpdate = async () => {
 const onAdd = async () => {
   await $fetch(`/api/v1/posts`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
+    headers: useRequestHeaders(['cookie']),
     body: newRow.value,
-    onResponse({ response }) {
+    async onResponse({ response }) {
       if (response.ok) {
-        refresh()
+        await refresh()
         isOpenAddModal.value = false
         newRow.value = undefined
 
@@ -133,7 +141,7 @@ const onConfirmDelete = (row: Post) => {
 const onDelete = async (row: Post) => {
   await $fetch(`/api/v1/posts/${row._id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
+    headers: useRequestHeaders(['cookie']),
     onResponse({ response }) {
       if (response.ok) {
         refresh()
@@ -148,11 +156,15 @@ const onDelete = async (row: Post) => {
 
 const openModalEdit = (row: Post) => {
   editRow.value = undefined
+  editSeo.title = undefined
+  editSeo.description = undefined
 
   isOpenEditModal.value = true
   editRow.value = row
   editSeo.title = row.seo?.title
   editSeo.description = row.seo?.description
+
+  console.log(row, editRow.value)
 }
 
 defineShortcuts({
@@ -233,6 +245,7 @@ defineShortcuts({
       </div>
     </UDashboardPanel>
     <UDashboardModal
+      v-if="editRow"
       v-model="isOpenEditModal"
       :close-button="null"
       :ui="{ width: 'sm:min-w-[50dvw]' }"
@@ -272,6 +285,14 @@ defineShortcuts({
             v-model="editRow.status"
             :options="Object.keys(EStatusPost).map(key => ({ label: key, value: EStatusPost[key] }))"
           />
+        </UFormGroup>
+
+        <UFormGroup
+          label="Slug"
+          name="slug"
+          required
+        >
+          <UInput v-model="editRow.slug" />
         </UFormGroup>
 
         <UAccordion :items="[{ label: 'SEO', slot: 'seo' }]">
@@ -341,6 +362,14 @@ defineShortcuts({
             v-model="newRow.status"
             :options="Object.keys(EStatusPost).map(key => ({ label: key, value: EStatusPost[key] }))"
           />
+        </UFormGroup>
+
+        <UFormGroup
+          label="Slug"
+          name="slug"
+          required
+        >
+          <UInput v-model="newRow.slug" />
         </UFormGroup>
 
         <UAccordion :items="[{ label: 'SEO', slot: 'seo' }]">

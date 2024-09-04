@@ -42,6 +42,7 @@ export interface Post {
   title: string
   description: string
   status: (typeof EStatusPost)[keyof typeof EStatusPost]
+  slug: string
   created_at: string
   updated_at: string
   deleted_at?: string
