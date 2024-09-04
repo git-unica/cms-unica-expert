@@ -17,6 +17,11 @@ const defaultColumns = [
     sortable: true
   },
   {
+    key: 'status',
+    label: 'Trạng thái',
+    sortable: true
+  },
+  {
     key: 'action',
     label: 'Hành động'
   }
@@ -195,6 +200,9 @@ defineShortcuts({
         :ui="{ divide: 'divide-gray-200 dark:divide-gray-800' }"
         class="w-full"
       >
+        <template #[`status-data`]="{ row }">
+          {{ row.status === 'draft' ? 'Bản nháp' : 'Công khai' }}
+        </template>
         <template #[`action-data`]="{ row }">
           <UButton
             :ui="{ rounded: 'rounded-full' }"
@@ -225,6 +233,7 @@ defineShortcuts({
     <UDashboardModal
       v-model="isOpenEditModal"
       :close-button="null"
+      :ui="{ width: 'sm:min-w-[50dvw]' }"
       title="Sửa bài viết"
     >
       <UForm
