@@ -39,7 +39,7 @@ const editSeo = reactive({
   description: undefined
 })
 const isOpenAddModal = ref(false)
-const newRow = reactive({
+const newRow = ref({
   title: undefined,
   description: undefined,
   status: EStatusPost.Draft,
@@ -105,11 +105,12 @@ const onAdd = async () => {
   await $fetch(`/api/v1/posts`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken.value}` },
-    body: newRow,
+    body: newRow.value,
     onResponse({ response }) {
       if (response.ok) {
         refresh()
         isOpenAddModal.value = false
+        newRow.value = undefined
 
         toast.add({ title: 'Thêm bài viết thành công', color: 'green' })
       } else {
@@ -146,7 +147,8 @@ const onDelete = async (row: Post) => {
 }
 
 const openModalEdit = (row: Post) => {
-  console.log(row)
+  editRow.value = undefined
+
   isOpenEditModal.value = true
   editRow.value = row
   editSeo.title = row.seo?.title
