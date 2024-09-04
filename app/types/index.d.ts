@@ -1,6 +1,7 @@
 import type { ERole } from '~/enums/role.enum'
 import type { ECommunityStatus } from '~/enums/community-status.enum'
 import type { ECommunityType } from '~/enums/community-type.enum'
+import type { EStatusPost } from '~/enums/status-post.enum'
 
 export interface User {
   _id: string
@@ -34,6 +35,20 @@ export interface Topic {
   created_at: string
   updated_at: string
   deleted_at?: string
+}
+
+export interface Post {
+  _id: string
+  title: string
+  description: string
+  status: (typeof EStatusPost)[keyof typeof EStatusPost]
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+  seo?: {
+    title?: string
+    description?: string
+  }
 }
 
 export interface Community {

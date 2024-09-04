@@ -41,6 +41,16 @@ const links = [{
   }
 },
 {
+  id: 'post',
+  label: 'Bài viết',
+  icon: 'i-heroicons-newspaper',
+  to: '/post',
+  tooltip: {
+    text: 'Bài viết',
+    shortcuts: ['G', 'P']
+  }
+},
+{
   id: 'level',
   label: 'Cấp độ thành viên',
   icon: 'i-heroicons-rectangle-stack',

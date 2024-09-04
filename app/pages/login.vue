@@ -33,7 +33,8 @@ const password = ref()
 
 if (isLogin.value) navigateTo('/')
 
-const { status, execute } = useFetch(`/api/v1/auth/login`, {
+const { fetch } = useNestSession()
+const { status, execute: login } = useFetch(`/api/v1/auth/login`, {
   method: 'POST',
   headers: {
     Authorization: `Bearer ${accessToken.value}`
@@ -44,10 +45,8 @@ const { status, execute } = useFetch(`/api/v1/auth/login`, {
   body: { username, password },
   onResponse: async ({ response }) => {
     if (response.ok) {
-      authStore.setAccessToken(response._data.access_token)
-      authStore.setRefreshToken(response._data.refresh_token)
-      await authStore.getUserInfo()
-
+      await fetch()
+      await useSessionToStore()
       navigateTo('/')
     }
   },
@@ -59,7 +58,7 @@ const { status, execute } = useFetch(`/api/v1/auth/login`, {
 const onLogin = async (data: { username: string, password: string }) => {
   username.value = data.username
   password.value = data.password
-  execute()
+  await login()
 }
 </script>
 

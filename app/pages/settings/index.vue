@@ -3,7 +3,6 @@ import type { FormError, FormSubmitEvent } from '#ui/types'
 import type { User } from '~/types'
 
 const toast = useToast()
-const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const { accessToken, user } = storeToRefs(authStore)
 const fileRef = ref<HTMLInputElement>()

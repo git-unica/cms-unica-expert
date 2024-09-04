@@ -4,12 +4,21 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const authStore = useAuthStore()
   const { isLogin, refreshToken } = storeToRefs(authStore)
   const { session } = useNestSession()
-  if (!isLogin.value && !session.value.isAuthenticated && refreshToken.value) {
-    try {
-      await useReLogin(refreshToken.value)
-    } catch (e) {
-      await authStore.logout()
-      navigateTo('/login')
+  if (!isLogin.value && session.value?.isAuthenticated) {
+    await useSessionToStore()
+  }
+
+  if (!isLogin.value && !session.value?.isAuthenticated) {
+    if (refreshToken.value) {
+      try {
+        await useReLogin(refreshToken.value)
+        return
+      } catch (e) {
+        console.log(e)
+        await authStore.logout()
+      }
     }
+
+    return navigateTo('/login')
   }
 })

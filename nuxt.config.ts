@@ -9,7 +9,8 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@pinia-plugin-persistedstate/nuxt',
     'dayjs-nuxt',
-    '@nuxt/image'
+    '@nuxt/image',
+    'nuxt-lodash'
   ],
   runtimeConfig: {
     public: {
