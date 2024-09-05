@@ -35,12 +35,13 @@ const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
 const editRow = ref<AffiliateLevel>()
 const isOpenAddModal = ref(false)
-const newRow = ref({
+const defaultData = {
   name: '',
   verified_users: 0,
   commission: 10,
   icon: ''
-})
+}
+const newRow = ref(defaultData)
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
 
@@ -51,6 +52,7 @@ const schema = object({
     .required('Không được trống'),
   commission: number()
     .min(10, 'Giá trị tối thiểu là 10')
+    .max(70, 'Giá trị tối đa là 70')
     .required('Không được trống'),
   icon: string().required('Không được trống')
 })
@@ -61,13 +63,14 @@ const onUpdate = async () => {
   if (!editRow.value) return
 
   await $fetch(`/api/v1/affiliate-level/${editRow.value._id}`, {
-    method: 'POST',
+    method: 'PATCH',
     headers: useRequestHeaders(['cookie']),
     body: useOmitBy(editRow.value, '_id'),
     onResponse({ response }) {
       if (response.ok) {
         refresh()
         isOpenEditModal.value = false
+        editRow.value = undefined
 
         toast.add({ title: 'Cập nhật cấp độ thành viên thành công', color: 'green' })
       } else {
@@ -86,6 +89,7 @@ const onAdd = async () => {
       if (response.ok) {
         refresh()
         isOpenAddModal.value = false
+        newRow.value = defaultData
 
         toast.add({ title: 'Thêm cấp độ thành viên thành công', color: 'green' })
       } else {
@@ -119,6 +123,13 @@ const onDelete = async (row: AffiliateLevel) => {
       }
     }
   })
+}
+
+const openModalEdit = (row: AffiliateLevel) => {
+  editRow.value = undefined
+
+  isOpenEditModal.value = true
+  editRow.value = row
 }
 
 defineShortcuts({
@@ -173,7 +184,7 @@ defineShortcuts({
             :ui="{ rounded: 'rounded-full' }"
             class="mr-1"
             icon="i-heroicons-pencil-square"
-            @click="isOpenEditModal = true; editRow = row"
+            @click="openModalEdit(row)"
           />
           <UButton
             :ui="{ rounded: 'rounded-full' }"
@@ -186,6 +197,7 @@ defineShortcuts({
       <UDivider />
     </UDashboardPanel>
     <UDashboardModal
+      v-if="editRow"
       v-model="isOpenEditModal"
       :close-button="null"
       title="Sửa cấp độ"
@@ -238,6 +250,7 @@ defineShortcuts({
       </UForm>
     </UDashboardModal>
     <UDashboardModal
+      v-if="newRow"
       v-model="isOpenAddModal"
       :close-button="null"
       title="Thêm cấp độ"

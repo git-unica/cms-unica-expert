@@ -38,7 +38,7 @@ const editSeo = reactive({
   description: undefined
 })
 const isOpenAddModal = ref(false)
-const newRow = ref({
+const defaultData = {
   title: undefined,
   description: undefined,
   status: EStatusPost.Draft,
@@ -47,7 +47,8 @@ const newRow = ref({
     title: undefined,
     description: undefined
   }
-})
+}
+const newRow = ref(defaultData)
 const q = ref()
 const keyword = refDebounced(q, 500)
 const page = ref(1)
@@ -118,7 +119,7 @@ const onAdd = async () => {
       if (response.ok) {
         await refresh()
         isOpenAddModal.value = false
-        newRow.value = undefined
+        newRow.value = defaultData
 
         toast.add({ title: 'Thêm bài viết thành công', color: 'green' })
       } else {
