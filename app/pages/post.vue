@@ -163,8 +163,6 @@ const openModalEdit = (row: Post) => {
   editRow.value = row
   editSeo.title = row.seo?.title
   editSeo.description = row.seo?.description
-
-  console.log(row, editRow.value)
 }
 
 defineShortcuts({

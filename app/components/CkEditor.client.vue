@@ -156,6 +156,7 @@ const toolbar = ref((isBoolean(props.overwrite) && props.overwrite) || (isObject
         '|',
         'fontBackgroundColor',
         'fontColor',
+        'fontSize',
         'superscript',
         'subscript',
         'strikethrough',
@@ -218,6 +219,17 @@ const editorConfig = computed(() => (isBoolean(props.overwrite) && props.overwri
     htmlSupport: {
       allow: [],
       disallow: []
+    },
+    fontSize: {
+      options: [
+        12,
+        14,
+        16,
+        18,
+        20,
+        24,
+        30
+      ]
     },
     ...props.config
   })
