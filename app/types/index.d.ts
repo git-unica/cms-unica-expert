@@ -13,6 +13,7 @@ export interface User {
   bio?: string
   ref?: string
   roles?: string[]
+  affiliate_level_id?: string
   created_at: string
   updated_at: string
   deleted_at?: string

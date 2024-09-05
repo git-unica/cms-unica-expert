@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { IResponsePagination, User } from '~/types'
+import type { AffiliateLevel, IResponsePagination, User } from '~/types'
 
 const defaultColumns = [
   {
@@ -19,12 +19,14 @@ const defaultColumns = [
   {
     key: 'phone',
     label: 'Số điện thoại'
+  },
+  {
+    key: 'affiliate_level',
+    label: 'Cấp độ Affiliate'
   }
 ]
 
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
+const toast = useToast()
 const q = ref()
 const keyword = refDebounced(q, 500)
 const selected = ref<User[]>([])
@@ -35,7 +37,8 @@ const isNewUserModalOpen = ref(false)
 const page = ref(1)
 const query = reactive({
   keyword,
-  page
+  page,
+  'sort[_id]': -1
 })
 const errorMsg = ref()
 
@@ -50,10 +53,9 @@ watch(sortTable, (newValue) => {
   query[`sort[${newValue.column}]`] = newValue.direction === 'desc' ? -1 : 1
 })
 
-const { data: users, status } = await useFetch<IResponsePagination<User>>('/api/v1/users', {
+const { data: users, status, refresh } = await useFetch<IResponsePagination<User>>('/api/v1/users', {
   query,
-  credentials: 'include',
-  headers: { Authorization: `Bearer ${accessToken.value}` },
+  headers: useRequestHeaders(['cookie']),
   lazy: true,
   default: () => ({
     meta: {
@@ -71,6 +73,15 @@ const { data: users, status } = await useFetch<IResponsePagination<User>>('/api/
   }
 })
 
+const affLevelOptions = ref([])
+const { data: allAffLevel } = useLazyFetch<AffiliateLevel[]>(`/api/v1/affiliate-level`)
+
+watchEffect(() => {
+  if (allAffLevel.value) {
+    affLevelOptions.value = allAffLevel.value.map(a => ({ name: a.name, value: a._id }))
+  }
+})
+
 function onSelect(row: User) {
   const index = selected.value.findIndex(item => item._id === row._id)
   if (index === -1) {
@@ -78,6 +89,24 @@ function onSelect(row: User) {
   } else {
     selected.value.splice(index, 1)
   }
+}
+
+const onUpdateAffLevel = async (row: AffiliateLevel, level_id: string) => {
+  await $fetch(`/api/v1/users/${row._id}/affiliate-level`, {
+    method: 'PATCH',
+    headers: useRequestHeaders(['cookie']),
+    body: {
+      level_id
+    },
+    onResponse({ response }) {
+      if (response.ok) {
+        refresh()
+        toast.add({ title: 'Cập nhật cấp độ thành công', color: 'green' })
+      } else {
+        toast.add({ title: 'Có lỗi khi thao tác', color: 'red' })
+      }
+    }
+  })
 }
 
 defineShortcuts({
@@ -163,6 +192,15 @@ defineShortcuts({
           <div class="flex flex-col items-center justify-center py-6 gap-3">
             <span class="italic text-sm">{{ errorMsg ?? 'Không có thành viên' }}</span>
           </div>
+        </template>
+        <template #[`affiliate_level-data`]="{ row }">
+          <USelect
+            v-model="row.affiliate_level_id"
+            :options="affLevelOptions"
+            option-attribute="name"
+            placeholder="Chọn cấp"
+            @change="onUpdateAffLevel(row, $event)"
+          />
         </template>
       </UTable>
       <UDivider />
