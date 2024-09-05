@@ -83,7 +83,7 @@ const { data: pagePost, status, refresh } = await useLazyFetch<IResponsePaginati
 })
 
 watch(() => newRow.value.title, (newValue) => {
-  newRow.value.slug = slugify(newValue, { locale: 'vi', lower: true })
+  newRow.value.slug = 'page/' + slugify(newValue, { locale: 'vi', lower: true })
 })
 
 const onUpdate = async () => {
