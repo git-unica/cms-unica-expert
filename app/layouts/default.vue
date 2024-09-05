@@ -51,6 +51,16 @@ const links = [{
   }
 },
 {
+  id: 'affiliate_level',
+  label: 'Cấp độ affiliate',
+  icon: 'i-heroicons-rectangle-stack',
+  to: '/affiliate-level',
+  tooltip: {
+    text: 'Cấp độ affiliate',
+    shortcuts: ['G', 'A']
+  }
+},
+{
   id: 'level',
   label: 'Cấp độ thành viên',
   icon: 'i-heroicons-rectangle-stack',

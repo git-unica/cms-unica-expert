@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { number, object, string } from 'yup'
 import Notiflix from 'notiflix'
-import type { Level } from '~/types'
+import type { AffiliateLevel } from '~/types'
 
 const defaultColumns = [
   {
@@ -15,9 +15,13 @@ const defaultColumns = [
     sortable: true
   },
   {
-    key: 'point',
-    label: 'Điểm',
+    key: 'verified_users',
+    label: 'Yêu cầu giới thiệu',
     sortable: true
+  },
+  {
+    key: 'icon',
+    label: 'Biểu tượng'
   },
   {
     key: 'action',
@@ -26,45 +30,40 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
-const editRow = ref<Level>()
+const editRow = ref<AffiliateLevel>()
 const isOpenAddModal = ref(false)
 const newRow = ref({
   name: '',
-  point: 0
+  verified_users: 0,
+  commission: 10,
+  icon: ''
 })
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
 
 const schema = object({
   name: string().required('Không được trống'),
-  point: number()
+  verified_users: number()
     .min(0, 'Giá trị tối thiểu là 0')
-    .required('Không được trống')
+    .required('Không được trống'),
+  commission: number()
+    .min(10, 'Giá trị tối thiểu là 10')
+    .required('Không được trống'),
+  icon: string().required('Không được trống')
 })
 
-const { data: allLevel, status, refresh } = await useFetch<Level[]>('/api/v1/level', {
-  credentials: 'include',
-  headers: { Authorization: `Bearer ${accessToken.value}` }
-})
+const { data: allLevel, status, refresh } = await useFetch<AffiliateLevel[]>('/api/v1/affiliate-level')
 
 const onUpdate = async () => {
   if (!editRow.value) return
 
-  await $fetch(`/api/v1/level`, {
+  await $fetch(`/api/v1/affiliate-level/${editRow.value._id}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
-    body: {
-      level_id: editRow.value._id,
-      title: editRow.value.name,
-      point: editRow.value.point
-    },
+    headers: useRequestHeaders(['cookie']),
+    body: useOmitBy(editRow.value, '_id'),
     onResponse({ response }) {
       if (response.ok) {
         refresh()
@@ -79,14 +78,10 @@ const onUpdate = async () => {
 }
 
 const onAdd = async () => {
-  await $fetch(`/api/v1/level`, {
+  await $fetch(`/api/v1/affiliate-level`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
-    body: {
-      title: newRow.value.name,
-      point: newRow.value.point
-    },
+    headers: useRequestHeaders(['cookie']),
+    body: newRow.value,
     onResponse({ response }) {
       if (response.ok) {
         refresh()
@@ -100,7 +95,7 @@ const onAdd = async () => {
   })
 }
 
-const onConfirmDelete = (row: Level) => {
+const onConfirmDelete = (row: AffiliateLevel) => {
   Notiflix.Confirm.show(
     'Cảnh báo',
     `Bạn đang thực hiện xoá ${row.name}`,
@@ -110,16 +105,15 @@ const onConfirmDelete = (row: Level) => {
   )
 }
 
-const onDelete = async (row: Level) => {
-  await $fetch(`/api/v1/level/${row._id}`, {
+const onDelete = async (row: AffiliateLevel) => {
+  await $fetch(`/api/v1/affiliate-level/${row._id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
+    headers: useRequestHeaders(['cookie']),
     onResponse({ response }) {
       if (response.ok) {
         refresh()
 
-        toast.add({ title: 'Xoá cấp độ thành viên thành công', color: 'green' })
+        toast.add({ title: 'Xoá cấp độ affiliate thành công', color: 'green' })
       } else {
         toast.add({ title: 'Có lỗi khi thao tác', color: 'red' })
       }
@@ -139,7 +133,7 @@ defineShortcuts({
     <UDashboardPanel grow>
       <UDashboardNavbar
         :badge="allLevel.length"
-        title="Cấp độ thành viên"
+        title="Cấp độ affiliate"
       >
         <template #right>
           <UButton
@@ -210,12 +204,31 @@ defineShortcuts({
         </UFormGroup>
 
         <UFormGroup
-          label="Điểm"
-          name="point"
+          label="Số người cần giới thiệu >="
+          name="verified_users"
         >
           <UInput
-            v-model="editRow.point"
+            v-model="editRow.verified_users"
             type="number"
+          />
+        </UFormGroup>
+
+        <UFormGroup
+          label="Hoa hồng phần mềm (trọn đời)"
+          name="commission"
+        >
+          <UInput
+            v-model="editRow.commission"
+            type="number"
+          />
+        </UFormGroup>
+
+        <UFormGroup
+          label="Icon"
+          name="icon"
+        >
+          <UInput
+            v-model="editRow.icon"
           />
         </UFormGroup>
 
@@ -243,15 +256,33 @@ defineShortcuts({
         </UFormGroup>
 
         <UFormGroup
-          label="Điểm"
-          name="point"
+          label="Số người cần giới thiệu >="
+          name="verified_users"
         >
           <UInput
-            v-model="newRow.point"
+            v-model="newRow.verified_users"
             type="number"
           />
         </UFormGroup>
 
+        <UFormGroup
+          label="Hoa hồng phần mềm (trọn đời)"
+          name="commission"
+        >
+          <UInput
+            v-model="newRow.commission"
+            type="number"
+          />
+        </UFormGroup>
+
+        <UFormGroup
+          label="Icon"
+          name="icon"
+        >
+          <UInput
+            v-model="newRow.icon"
+          />
+        </UFormGroup>
         <UButton type="submit">
           Lưu
         </UButton>

@@ -27,6 +27,17 @@ export interface Level {
   deleted_at?: string
 }
 
+export interface AffiliateLevel {
+  _id: string
+  name: string
+  verified_users: number
+  commission: number
+  icon: string
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+}
+
 export interface Topic {
   _id: string
   title: string
