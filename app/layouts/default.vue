@@ -70,6 +70,15 @@ const links = [{
     shortcuts: ['G', 'L']
   }
 }, {
+  id: 'order',
+  label: 'Đơn hàng',
+  icon: 'i-heroicons-clipboard-document-list',
+  to: '/order',
+  tooltip: {
+    text: 'Đơn hàng',
+    shortcuts: ['G', 'O']
+  }
+}, {
   id: 'settings',
   label: 'Settings',
   to: '/settings',

@@ -25,6 +25,7 @@
     "ckeditor5": "^43.0.0",
     "date-fns": "^3.6.0",
     "notiflix": "^3.2.7",
+    "numeral": "^2.0.6",
     "nuxt": "^3.12.2",
     "slugify": "^1.6.6",
     "v-calendar": "^3.1.2",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@nuxt/eslint": "^0.3.13",
     "@pinia-plugin-persistedstate/nuxt": "^1.2.1",
+    "@types/numeral": "^2.0.5",
     "dayjs-nuxt": "^2.1.9",
     "eslint": "^9.5.0",
     "nuxt-lodash": "^2.5.3",

@@ -2,6 +2,7 @@ import type { ERole } from '~/enums/role.enum'
 import type { ECommunityStatus } from '~/enums/community-status.enum'
 import type { ECommunityType } from '~/enums/community-type.enum'
 import type { EStatusPost } from '~/enums/status-post.enum'
+import type { OrderStatus } from '~/enums/order-status.enum'
 
 export interface User {
   _id: string
@@ -141,4 +142,17 @@ export interface IResponsePagination<T> {
 export interface Role {
   _id: string
   name: (typeof ERole)[keyof typeof ERole]
+}
+
+export interface Order {
+  _id: string
+  buyer_id: string
+  buyer_name: string
+  community_id: string
+  community_name: string
+  package_code: string
+  period: number
+  total_amount: number
+  created_at: Date
+  status: (typeof OrderStatus)[keyof typeof OrderStatus]
 }
