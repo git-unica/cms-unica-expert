@@ -70,13 +70,22 @@ const links = [{
     shortcuts: ['G', 'L']
   }
 }, {
-  id: 'order',
-  label: 'Đơn hàng',
+  id: 'software-order',
+  label: 'Đơn hàng phần mềm',
   icon: 'i-heroicons-clipboard-document-list',
-  to: '/order',
+  to: '/software-order',
   tooltip: {
-    text: 'Đơn hàng',
-    shortcuts: ['G', 'O']
+    text: 'Đơn hàng phần mềm',
+    shortcuts: ['G', 'S']
+  }
+}, {
+  id: 'community-order',
+  label: 'Đơn hàng cộng đồng',
+  icon: 'i-heroicons-clipboard-document-list',
+  to: '/community-order',
+  tooltip: {
+    text: 'Đơn hàng cộng đồng',
+    shortcuts: ['G', 'CO']
   }
 }, {
   id: 'settings',

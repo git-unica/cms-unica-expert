@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import numeral from 'numeral'
 import dayjs from 'dayjs'
-import { type InferType, object, string } from 'yup'
+import { format, sub } from 'date-fns'
 import type { Order } from '~/types'
 import { OrderStatus } from '~/enums/order-status.enum'
 import { useAuthStore } from '~/stores/auth'
-import type { FormSubmitEvent } from '#ui/types'
+import { ECommunityOrderStatus } from '~/enums/community-order.enum'
+import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
   {
@@ -20,8 +21,8 @@ const defaultColumns = [
     label: 'Tên cộng đồng'
   },
   {
-    key: 'package_code',
-    label: 'Gói phần mềm'
+    key: 'course_name',
+    label: 'Tên khóa học'
   },
   {
     key: 'period',
@@ -30,6 +31,10 @@ const defaultColumns = [
   {
     key: 'total_amount',
     label: 'Tổng tiền'
+  },
+  {
+    key: 'type',
+    label: 'Kiểu đơn'
   },
   {
     key: 'created_at',
@@ -45,22 +50,46 @@ const defaultColumns = [
   }
 ]
 
+// filter by date range picker
+const selectedDate = ref({ start: sub(new Date(), { days: 14 }), end: new Date() })
+
+// filter by status
+const selectedStatus = ref()
+const statusOptions = [{
+  value: ECommunityOrderStatus.Processing,
+  label: 'Đang xử lý'
+}, {
+  value: ECommunityOrderStatus.Paid,
+  label: 'Đã thanh toán'
+}
+]
+
 const toast = useToast()
-const q = ref()
-const keyword = refDebounced(q, 500)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
-const input = ref<{ input: HTMLInputElement }>()
 const page = ref(1)
 const query = reactive({
-  keyword,
   page,
   'sort[_id]': -1
 })
+
+watch([selectedDate, selectedStatus], ([newSelectedDate, newSelectedStatus]) => {
+  if (newSelectedDate) {
+    query['filter[fromDate]'] = dayjs(newSelectedDate.start).toString()
+    query['filter[toDate]'] = dayjs(newSelectedDate.end).toString()
+    query['page'] = 1
+    refresh()
+  }
+
+  if (newSelectedStatus !== '' && newSelectedStatus !== null) {
+    query['filter[status]'] = newSelectedStatus
+    query['page'] = 1
+    refresh()
+  }
+})
+
 const errorMsg = ref()
-
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
-
-const { data: orders, status, refresh } = await useFetch('/api/v1/order', {
+const { data: orders, status, refresh } = await useFetch('/api/v1/community-order', {
   query,
   headers: useRequestHeaders(['cookie']),
   lazy: true,
@@ -92,9 +121,9 @@ const openDeleteOrderModal = (row: Order) => {
 }
 
 const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
+const { accessToken, user } = storeToRefs(authStore)
 const onDeleteOrder = async () => {
-  await useFetch(`/api/v1/order/${selectedOrderId.value}`, {
+  await useFetch(`/api/v1/community-order/${selectedOrderId.value}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${accessToken.value}`,
@@ -116,87 +145,39 @@ const closeDeleteOrderModal = () => {
   isOpenDeleteOrderModal.value = false
 }
 
-// change status modal
-const isOpenChangeStatusModal = ref(false)
-const statusType = ref('')
-const openChangeStatusOrderModal = (row: Order, orderStatus: string) => {
-  selectedOrderId.value = row._id
-  if (orderStatus === 'cancel') {
-    statusType.value = 'cancel'
-  } else if (orderStatus === 'paid') {
-    statusType.value = 'paid'
-  }
-  isOpenChangeStatusModal.value = true
-}
-
-const closeChangeStatusOrderModal = () => {
-  isOpenChangeStatusModal.value = false
-  state.cancel_reason = ''
-}
-
-const schema = object({
-  cancel_reason: string().required('Cần ghi rõ lý do hủy đơn')
-})
-
-type Schema = InferType<typeof schema>
-
-const state = reactive({
-  cancel_reason: ''
-})
-
-const onSubmit = async (event: FormSubmitEvent<Schema>) => {
-  await useFetch(`/api/v1/order/${selectedOrderId.value}`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${accessToken.value}`,
-      'Content-Type': 'application/json'
-    },
-    body: {
-      destination_status: OrderStatus.Cancel,
-      cancel_reason: event.data.cancel_reason || ''
-    },
-    onResponse({ response }) {
-      if (response.ok) {
-        isOpenChangeStatusModal.value = false
-        toast.add({ title: response._data.message, color: 'green' })
-        refresh()
-      } else {
-        isOpenChangeStatusModal.value = false
-        toast.add({ title: response._data.message, color: 'red' })
-      }
-    }
-  })
-  state.cancel_reason = ''
-}
-
-const onChangeStatusOrderToPaid = async () => {
-  await useFetch(`/api/v1/order/${selectedOrderId.value}`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${accessToken.value}`,
-      'Content-Type': 'application/json'
-    },
-    body: {
-      destination_status: OrderStatus.Paid
-    },
-    onResponse({ response }) {
-      if (response.ok) {
-        isOpenChangeStatusModal.value = false
-        toast.add({ title: response._data.message, color: 'green' })
-        refresh()
-      } else {
-        isOpenChangeStatusModal.value = false
-        toast.add({ title: response._data.message, color: 'red' })
-      }
-    }
-  })
-}
-//
-
 // redirect detail
 const redirectToOrderDetail = async (row: Order) => {
-  await navigateTo({ path: '/order/' + row._id })
+  await navigateTo({ path: '/community-order/' + row._id })
 }
+
+// redirect to receipt
+const redirectToReceipt = async (row: Order) => {
+  await navigateTo({ path: '/community-order/' + row._id + '/receipt' })
+}
+
+// reset
+const onResetFilter = () => {
+  if (query['filter[fromDate]']) {
+    delete query['filter[fromDate]']
+  }
+
+  if (query['filter[toDate]']) {
+    delete query['filter[toDate]']
+  }
+
+  if (Object.keys(query).includes('filter[status]')) {
+    delete query['filter[status]']
+  }
+
+  query['page'] = 1
+  selectedStatus.value = undefined
+  refresh()
+}
+
+// user info
+const checkUserRole = computed(() => {
+  return user?.value.roles
+})
 </script>
 
 <template>
@@ -204,11 +185,51 @@ const redirectToOrderDetail = async (row: Order) => {
     <UDashboardPanel grow>
       <UDashboardNavbar
         :badge="orders.meta.itemCount"
-        title="Đơn hàng"
+        title="Đơn hàng cộng đồng"
       >
       </UDashboardNavbar>
 
       <UDashboardToolbar>
+        <template #left>
+          <div class="flex gap-6">
+            <div class="flex justify-center items-center gap-2">
+              <h4>Lọc theo khoảng thời gian: </h4>
+              <UPopover :popper="{ placement: 'bottom-start' }">
+                <UButton icon="i-heroicons-calendar-days-20-solid">
+                  {{ format(selectedDate.start, 'd MMM, yyy') }} - {{ format(selectedDate.end, 'd MMM, yyy') }}
+                </UButton>
+
+                <template #panel="{ close }">
+                  <div class="flex items-center sm:divide-x divide-gray-200 dark:divide-gray-800">
+                    <DatePicker v-model="selectedDate" @close="close" />
+                  </div>
+                </template>
+              </UPopover>
+            </div>
+            <div class="flex justify-center items-center gap-2">
+              <h4>Lọc theo trạng thái: </h4>
+              <USelectMenu
+                v-model="selectedStatus"
+                :options="statusOptions"
+                placeholder="Chọn trạng thái"
+                value-attribute="value"
+                option-attribute="label"
+                class="w-[200px]"
+              />
+            </div>
+            <UButton
+              icon="i-heroicons-arrow-path-16-solid"
+              size="sm"
+              color="primary"
+              variant="solid"
+              label="Button"
+              :trailing="false"
+              @click="onResetFilter"
+            >
+              Làm mới
+            </UButton>
+          </div>
+        </template>
         <template #right>
           <USelectMenu
             v-model="selectedColumns"
@@ -241,6 +262,9 @@ const redirectToOrderDetail = async (row: Order) => {
         <template #created_at-data="{ row }">
           {{ dayjs(row.created_at).format('HH:mm DD/MM/YYYY') }}
         </template>
+        <template #type-data="{ row }">
+          {{ row.type === 1 ? 'Tham gia cộng đồng trả phí' : (row.type === 2 ? 'Mua khóa học' : '') }}
+        </template>
         <template #status-data="{ row }">
           {{ row.status === OrderStatus.Processing ? 'Đang xử lý' : (row.status === OrderStatus.Paid ? 'Đã thanh toán' : 'Đã hủy') }}
         </template>
@@ -253,30 +277,15 @@ const redirectToOrderDetail = async (row: Order) => {
                 @click="redirectToOrderDetail(row)"
               />
             </UTooltip>
-            <UTooltip
-              v-if="row.status === OrderStatus.Processing"
-              text="Thanh toán thành công"
-            >
+            <UTooltip text="Phiếu thu" v-if="checkUserRole.includes(ERole.Accountant)">
               <UButton
                 :ui="{ rounded: 'rounded-full' }"
-                color="green"
-                icon="i-heroicons-check-20-solid"
-                @click="openChangeStatusOrderModal(row, 'paid')"
-              />
-            </UTooltip>
-
-            <UTooltip
-              v-if="row.status !== OrderStatus.Cancel"
-              text="Hủy đơn"
-            >
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
+                icon="i-heroicons-clipboard-document-check-solid"
                 color="orange"
-                icon="i-heroicons-x-mark-16-solid"
-                @click="openChangeStatusOrderModal(row, 'cancel')"
+                @click="redirectToReceipt(row)"
               />
             </UTooltip>
-            <UTooltip text="Xóa đơn">
+            <UTooltip text="Xóa đơn" v-if="checkUserRole.includes(ERole.Admin)">
               <UButton
                 :ui="{ rounded: 'rounded-full' }"
                 color="red"
@@ -306,42 +315,6 @@ const redirectToOrderDetail = async (row: Order) => {
             <div class="flex gap-2 justify-end">
               <UButton label="Thoát" color="red" @click="closeDeleteOrderModal" :ui="{ padding: { sm: 'px-5 py-2' } }"/>
               <UButton label="Đồng ý" color="primary" @click="onDeleteOrder" :ui="{ padding: { sm: 'px-5 py-2' } }" />
-            </div>
-          </template>
-        </UCard>
-      </UModal>
-      <!---->
-      <!-- modal cập nhật trạng thái đơn hàng -->
-      <UModal v-model="isOpenChangeStatusModal" :ui="{ container: 'items-start sm:items-start' }" prevent-close>
-        <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-          <template #header>
-            <div class="flex justify-between">
-              <h3 class="font-bold text-2xl">{{ statusType === 'cancel' ? 'Hủy đơn hàng' : (statusType === 'paid' ? 'Cập nhật trạng thái đơn hàng' : 'Thông báo') }}</h3>
-              <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="closeChangeStatusOrderModal" />
-            </div>
-          </template>
-          <p v-if="statusType === 'paid'">Bạn có chắc chắn muốn chuyển trạng thái của đơn hàng này thành <strong>đã thanh toán</strong> không ?</p>
-          <UForm
-            v-if="statusType === 'cancel'"
-            :schema="schema"
-            :state="state"
-            class="space-y-4"
-            @submit="onSubmit"
-          >
-            <UFormGroup label="Lý do hủy đơn hàng" name="cancel_reason" required>
-              <UTextarea v-model="state.cancel_reason" placeholder="Nhập lý do hủy đơn..." rows="4" />
-            </UFormGroup>
-
-            <div class="flex justify-end">
-              <UButton type="submit" :ui="{ padding: { sm: 'px-5 py-2' } }">
-                Đồng ý
-              </UButton>
-            </div>
-          </UForm>
-          <template #footer v-if="statusType === 'paid'">
-            <div class="flex gap-2 justify-end">
-              <UButton label="Thoát" color="red" @click="closeChangeStatusOrderModal" :ui="{ padding: { sm: 'px-5 py-2' } }"/>
-              <UButton label="Đồng ý" color="primary" @click="onChangeStatusOrderToPaid" :ui="{ padding: { sm: 'px-5 py-2' } }" />
             </div>
           </template>
         </UCard>

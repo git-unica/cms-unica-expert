@@ -1,4 +1,5 @@
 export const ERole = {
   Mod: 'moderator',
-  Admin: 'administrator'
+  Admin: 'administrator',
+  Accountant: 'accountant'
 } as const
