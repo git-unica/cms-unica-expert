@@ -26,9 +26,6 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
@@ -49,8 +46,7 @@ const schema = object({
 })
 
 const { data: allLevel, status, refresh } = await useFetch<Level[]>('/api/v1/level', {
-  credentials: 'include',
-  headers: { Authorization: `Bearer ${accessToken.value}` }
+  headers: useRequestHeaders(['cookie'])
 })
 
 const onUpdate = async () => {
@@ -58,8 +54,7 @@ const onUpdate = async () => {
 
   await $fetch(`/api/v1/level`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
+    headers: useRequestHeaders(['cookie']),
     body: {
       level_id: editRow.value._id,
       title: editRow.value.name,
@@ -81,8 +76,7 @@ const onUpdate = async () => {
 const onAdd = async () => {
   await $fetch(`/api/v1/level`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
+    headers: useRequestHeaders(['cookie']),
     body: {
       title: newRow.value.name,
       point: newRow.value.point
@@ -113,8 +107,7 @@ const onConfirmDelete = (row: Level) => {
 const onDelete = async (row: Level) => {
   await $fetch(`/api/v1/level/${row._id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
+    headers: useRequestHeaders(['cookie']),
     onResponse({ response }) {
       if (response.ok) {
         refresh()

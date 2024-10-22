@@ -2,9 +2,6 @@
 import type { FormSubmitEvent } from '#ui/types'
 import type { Role, User } from '~/types'
 
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
 const toast = useToast()
 const emit = defineEmits(['close'])
 const props = defineProps<{ member: User, roles: Role[] }>()
@@ -18,7 +15,7 @@ async function onSubmit(event: FormSubmitEvent<User>) {
     body: {
       roles: event.data.roles
     },
-    headers: { Authorization: `Bearer ${accessToken.value}` },
+    headers: useRequestHeaders(['cookie']),
     onResponse({ response }) {
       if (response.ok) {
         if (event.data.roles.length === 0) {

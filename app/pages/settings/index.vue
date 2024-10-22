@@ -4,7 +4,7 @@ import type { User } from '~/types'
 
 const toast = useToast()
 const authStore = useAuthStore()
-const { accessToken, user } = storeToRefs(authStore)
+const { user } = storeToRefs(authStore)
 const fileRef = ref<HTMLInputElement>()
 const isDeleteAccountModalOpen = ref(false)
 const avatar = ref()
@@ -58,10 +58,7 @@ async function onSubmit(event: FormSubmitEvent<User>) {
   await $fetch(`/api/v1/users/me`, {
     method: 'PATCH',
     body: formData,
-    credentials: 'include',
-    headers: {
-      Authorization: `Bearer ${accessToken.value}`
-    },
+    headers: useRequestHeaders(['cookie']),
     onResponse({ response }) {
       if (response.ok) {
         toast.add({

@@ -2,14 +2,16 @@
 import type { IResponsePagination, Role, User } from '~/types'
 
 const toast = useToast()
-const props = withDefaults(defineProps<{
-  roles?: Role[]
-  keyword?: string
-  haveNewMember?: boolean
-}>(), { haveNewMember: false })
-const config = useRuntimeConfig()
+const props = withDefaults(
+  defineProps<{
+    roles?: Role[]
+    keyword?: string
+    haveNewMember?: boolean
+  }>(),
+  { haveNewMember: false }
+)
 const authStore = useAuthStore()
-const { accessToken, user } = storeToRefs(authStore)
+const { user } = storeToRefs(authStore)
 const keyword = computed(() => props.keyword)
 const isEditModalOpen = ref(false)
 const editMember = ref<User>()
@@ -20,20 +22,25 @@ const page = ref(1)
 const errorMsg = ref()
 
 function getItems(member: User) {
-  return [[{
-    label: 'Sửa',
-    click: () => {
-      editMember.value = member
-      isEditModalOpen.value = true
-    }
-  }, {
-    label: 'Xoá',
-    labelClass: 'text-red-500 dark:text-red-400',
-    click: () => {
-      removeMember.value = member
-      confirmDeleteMember.value = true
-    }
-  }]]
+  return [
+    [
+      {
+        label: 'Sửa',
+        click: () => {
+          editMember.value = member
+          isEditModalOpen.value = true
+        }
+      },
+      {
+        label: 'Xoá',
+        labelClass: 'text-red-500 dark:text-red-400',
+        click: () => {
+          removeMember.value = member
+          confirmDeleteMember.value = true
+        }
+      }
+    ]
+  ]
 }
 
 const queryRoles = computed(() => props.roles?.map(role => role._id))
@@ -43,8 +50,7 @@ const {
   status: statusMembers,
   refresh: refreshMembers
 } = useFetch<IResponsePagination<User>>('/api/v1/users', {
-  credentials: 'include',
-  headers: { Authorization: `Bearer ${accessToken.value}` },
+  headers: useRequestHeaders(['cookie']),
   query: {
     keyword,
     page,
@@ -66,7 +72,10 @@ const {
   }
 })
 
-watch(() => props.haveNewMember, () => refreshMembers())
+watch(
+  () => props.haveNewMember,
+  () => refreshMembers()
+)
 
 const findRole = (id: string) => {
   return props.roles.find(role => role._id === id)
@@ -76,8 +85,7 @@ const onDelete = async () => {
   deleting.value = true
   await $fetch(`/api/v1/users/${removeMember.value._id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
+    headers: useRequestHeaders(['cookie']),
     async onResponse({ response }) {
       if (response.ok) {
         if (removeMember.value._id === user.value._id) {
@@ -85,7 +93,9 @@ const onDelete = async () => {
           navigateTo('/login')
         }
 
-        const idx = members.value.data.findIndex(m => m._id === removeMember.value._id)
+        const idx = members.value.data.findIndex(
+          m => m._id === removeMember.value._id
+        )
         members.value.data.splice(idx, 1)
         members.value.meta.itemCount--
         members.value.meta.pageCount--

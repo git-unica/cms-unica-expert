@@ -2,17 +2,13 @@
 import type { Role, User } from '~/types'
 import { ERole } from '~/enums/role.enum'
 
-const config = useRuntimeConfig()
-const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
 const q = ref()
 const keyword = refDebounced(q, 500)
 const isInviteModalOpen = ref(false)
 const haveNewMember = ref(false)
 
 const { data: roles, status } = useFetch<Role[]>('/api/v1/admin/roles/list', {
-  credentials: 'include',
-  headers: { Authorization: `Bearer ${accessToken.value}` }
+  headers: useRequestHeaders(['cookie'])
 })
 
 const managerRoles = computed(() => roles.value?.filter(role => Object.values(ERole).includes(role.name)))

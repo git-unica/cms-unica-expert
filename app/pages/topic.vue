@@ -31,8 +31,6 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
-const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
@@ -64,8 +62,7 @@ const schema = object({
 
 const { data: pageTopic, status, refresh } = await useFetch<IResponsePagination<Topic>>('/api/v1/topic', {
   query,
-  credentials: 'include',
-  headers: { Authorization: `Bearer ${accessToken.value}` },
+  headers: useRequestHeaders(['cookie']),
   default: () => ({
     meta: {
       page: 0,
@@ -97,8 +94,7 @@ const onUpdate = async () => {
 
   await $fetch(`/api/v1/topic/${editRow.value._id}`, {
     method: 'PATCH',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
+    headers: useRequestHeaders(['cookie']),
     body: formData,
     onResponse({ response }) {
       if (response.ok) {
@@ -121,8 +117,7 @@ const onAdd = async () => {
 
   await $fetch(`/api/v1/topic`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
+    headers: useRequestHeaders(['cookie']),
     body: formData,
     onResponse({ response }) {
       if (response.ok) {
@@ -150,8 +145,7 @@ const onConfirmDelete = (row: Topic) => {
 const onDelete = async (row: Topic) => {
   await $fetch(`/api/v1/topic/${row._id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken.value}` },
-    credentials: 'include',
+    headers: useRequestHeaders(['cookie']),
     onResponse({ response }) {
       if (response.ok) {
         refresh()

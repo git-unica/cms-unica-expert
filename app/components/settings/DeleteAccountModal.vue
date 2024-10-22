@@ -5,7 +5,6 @@ const model = defineModel({
 
 const toast = useToast()
 const authStore = useAuthStore()
-const { accessToken } = storeToRefs(authStore)
 const loading = ref(false)
 
 const onDelete = async () => {
@@ -14,8 +13,7 @@ const onDelete = async () => {
   try {
     const res = await $fetch.raw(`/api/v1/users/me`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${accessToken.value}` },
-      credentials: 'include'
+      headers: useRequestHeaders(['cookie'])
     })
 
     if (res.ok) {

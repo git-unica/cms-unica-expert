@@ -121,14 +121,11 @@ const openDeleteOrderModal = (row: Order) => {
 }
 
 const authStore = useAuthStore()
-const { accessToken, user } = storeToRefs(authStore)
+const { user } = storeToRefs(authStore)
 const onDeleteOrder = async () => {
   await useFetch(`/api/v1/community-order/${selectedOrderId.value}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${accessToken.value}`,
-      'Content-Type': 'application/json'
-    },
+    headers: useRequestHeaders(['cookie']),
     onResponse({ response }) {
       if (response.ok) {
         isOpenDeleteOrderModal.value = false
