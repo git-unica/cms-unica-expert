@@ -1,25 +1,18 @@
+import type { User } from '~/types'
+
 interface AuthenticatedNestSession {
   isAuthenticated: true
-  userId: string
-  siteId?: string
-  accessToken: string
-  refreshToken: string
+  user: User
 }
 
 interface UnauthenticatedNestSession {
   isAuthenticated: false
-  userId?: undefined
-  siteId?: undefined
-  accessToken?: undefined
-  refreshToken?: undefined
+  user?: undefined
 }
 
 interface UnknownNestSession {
   isAuthenticated?: undefined
-  userId?: undefined
-  siteId?: undefined
-  accessToken?: undefined
-  refreshToken?: undefined
+  user?: undefined
 }
 
 type NestSession =
@@ -41,7 +34,6 @@ export const useNestSession = () => {
 async function fetch() {
   useSessionState().value = await $fetch('/api/v1/auth/session', {
     method: 'GET',
-    credentials: 'include',
     headers: useRequestHeaders(['cookie'])
   })
 }
@@ -49,7 +41,6 @@ async function fetch() {
 async function clear() {
   await $fetch('/api/v1/auth/session', {
     method: 'DELETE',
-    credentials: 'include',
     headers: useRequestHeaders(['cookie'])
   })
 
