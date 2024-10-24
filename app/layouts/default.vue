@@ -70,22 +70,21 @@ const links = [{
     shortcuts: ['G', 'L']
   }
 }, {
-  id: 'software-order',
-  label: 'Đơn hàng phần mềm',
+  id: 'order',
+  label: 'Đơn hàng',
+  to: '/order',
   icon: 'i-heroicons-clipboard-document-list',
-  to: '/software-order',
+  children: [{
+    label: 'Phần mềm',
+    to: '/order/software-order',
+    exact: true
+  }, {
+    label: 'Khóa học',
+    to: '/order/community-order'
+  }],
   tooltip: {
-    text: 'Đơn hàng phần mềm',
-    shortcuts: ['G', 'S']
-  }
-}, {
-  id: 'community-order',
-  label: 'Đơn hàng cộng đồng',
-  icon: 'i-heroicons-clipboard-document-list',
-  to: '/community-order',
-  tooltip: {
-    text: 'Đơn hàng cộng đồng',
-    shortcuts: ['G', 'CO']
+    text: 'Đơn hàng',
+    shortcuts: ['G', 'D']
   }
 }, {
   id: 'settings',
