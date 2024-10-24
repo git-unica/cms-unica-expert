@@ -243,8 +243,8 @@ const paymentStatusOptions = [{
 
 watch([selectedDate, selectedStatus, selectedPaymentStatus], ([newSelectedDate, newSelectedStatus, newSelectedPaymentStatus]) => {
   if (newSelectedDate) {
-    query['filter[fromDate]'] = dayjs(newSelectedDate.start).toString()
-    query['filter[toDate]'] = dayjs(newSelectedDate.end).toString()
+    query['filter[from_date]'] = dayjs(newSelectedDate.start).toString()
+    query['filter[to_date]'] = dayjs(newSelectedDate.end).toString()
   }
 
   if (newSelectedStatus !== '' && newSelectedStatus !== null) {
@@ -384,8 +384,8 @@ const onSearch = async () => {
 const onResetFilter = async () => {
   delete query['filter[content_type]']
   delete query['filter[keyword]']
-  delete query['filter[fromDate]']
-  delete query['filter[toDate]']
+  delete query['filter[from_date]']
+  delete query['filter[to_date]']
   delete query['filter[status]']
   delete query['filter[payment_status]']
   selectedContent.value = ''
