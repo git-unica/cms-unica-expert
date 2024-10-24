@@ -144,12 +144,12 @@ const closeDeleteOrderModal = () => {
 
 // redirect detail
 const redirectToOrderDetail = async (row: Order) => {
-  await navigateTo({ path: '/community-order/' + row._id })
+  await navigateTo({ path: '/order/community-order/' + row._id })
 }
 
 // redirect to receipt
 const redirectToReceipt = async (row: Order) => {
-  await navigateTo({ path: '/community-order/' + row._id + '/receipt' })
+  await navigateTo({ path: '/order/community-order/' + row._id + '/receipt' })
 }
 
 // reset
@@ -174,6 +174,12 @@ const onResetFilter = () => {
 // user info
 const checkUserRole = computed(() => {
   return user?.value.roles
+})
+
+const title = 'Đơn hàng cộng đồng'
+
+useSeoMeta({
+  title
 })
 </script>
 
