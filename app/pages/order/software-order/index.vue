@@ -202,7 +202,7 @@ const onChangeStatusOrderToPaid = async () => {
 
 // redirect detail
 const redirectToOrderDetail = async (row: Order) => {
-  await navigateTo({ path: '/order/software-order/' + row._id })
+  await navigateTo({ path: '/order/software-order/' + row.order_code })
 }
 
 // filter by date range picker
@@ -215,7 +215,7 @@ const statusOptions = [{
   label: 'Chờ xử lý'
 }, {
   value: OrderStatus.Paid,
-  label: 'Đã thanh toán'
+  label: 'Thành công'
 }, {
   value: OrderStatus.Cancel,
   label: 'Đã hủy'
@@ -263,8 +263,6 @@ watch(page, (newPage) => {
   }
 })
 // text search theo nội dung
-const selectedContent = ref('')
-const textSearch = ref('')
 const contentOptions = [{
   value: 'order_code',
   label: 'Mã đơn'
@@ -282,6 +280,8 @@ const contentOptions = [{
   label: 'Sale'
 }
 ]
+const selectedContent = ref(contentOptions[0].value)
+const textSearch = ref('')
 
 // chi tiết vai trò
 const queryRole = reactive({
@@ -368,7 +368,10 @@ const onAgreeChooseSale = async () => {
 }
 
 // click button tìm kiếm
+const authStore = useAuthStore()
 const onSearch = async () => {
+  // await authStore.logout()
+  // navigateTo('/login')
   if (selectedContent.value && textSearch.value) {
     query['filter[content_type]'] = selectedContent.value
     query['filter[keyword]'] = textSearch.value.trim()
@@ -419,7 +422,6 @@ useSeoMeta({
             <USelectMenu
               v-model="selectedContent"
               :options="contentOptions"
-              placeholder="Chọn nội dung"
               value-attribute="value"
               option-attribute="label"
               class="w-[200px]"
@@ -444,7 +446,7 @@ useSeoMeta({
             <USelectMenu
               v-model="selectedStatus"
               :options="statusOptions"
-              placeholder="Chọn trạng thái đơn"
+              placeholder="Trạng thái"
               value-attribute="value"
               option-attribute="label"
               class="w-[200px]"
@@ -452,7 +454,7 @@ useSeoMeta({
             <USelectMenu
               v-model="selectedPaymentStatus"
               :options="paymentStatusOptions"
-              placeholder="Chọn trạng thái thanh toán"
+              placeholder="Thanh toán"
               value-attribute="value"
               option-attribute="label"
               class="w-[220px]"
@@ -471,13 +473,16 @@ useSeoMeta({
               </UButton>
             </div>
             <UButton
-              icon="i-heroicons-arrow-path-16-solid"
+              icon="i-heroicons-x-mark-20-solid"
               size="sm"
-              color="primary"
-              variant="solid"
               label="Button"
               :trailing="false"
               @click="onResetFilter"
+              :ui="{
+                variant: {
+                  solid: 'bg-[#808080] hover:bg-gray-400'
+                }
+              }"
             >
               Bỏ lọc
             </UButton>
@@ -512,11 +517,11 @@ useSeoMeta({
           {{ dayjs(row.created_at).format("DD/MM/YYYY HH:mm:ss ") }}
         </template>
         <template #status-data="{ row }">
-          <span v-if="row.status === OrderStatus.Processing">Chờ xử lý</span>
-          <span v-if="row.status === OrderStatus.Paid">Kích hoạt</span>
-          <span v-if="row.status === OrderStatus.Cancel">Đã hủy</span>
-          <span v-if="row.status === OrderStatus.PayError">Thanh toán lỗi</span>
-          <span v-if="row.status === OrderStatus.Refund">Hoàn tiền</span>
+          <span v-if="row.status === OrderStatus.Processing" class="text-yellow-500">Chờ xử lý</span>
+          <span v-if="row.status === OrderStatus.Paid" class="text-green-500">Thành công</span>
+          <span v-if="row.status === OrderStatus.Cancel" class="text-orange-500">Đã hủy</span>
+          <span v-if="row.status === OrderStatus.PayError" class="text-red-500">Thanh toán lỗi</span>
+          <span v-if="row.status === OrderStatus.Refund" class="text-teal-500">Hoàn tiền</span>
         </template>
         <template #ref-data="{ row }">
           {{
@@ -526,9 +531,12 @@ useSeoMeta({
           }}
         </template>
         <template #payment-data="{ row }">
-          <span v-if="row.payment_status === OrderPaymentStatus.NotPay">Chưa thanh toán</span>
-          <span v-if="row.payment_status === OrderPaymentStatus.Paid">Đã thanh toán</span>
-          <span v-if="row.payment_status === OrderPaymentStatus.Cancel">Đã hủy</span>
+          <span v-if="row.payment_status === OrderPaymentStatus.NotPay" class="text-yellow-500">Chưa thanh toán</span>
+          <span v-if="row.payment_status === OrderPaymentStatus.Paid" class="text-green-500">Đã thanh toán</span>
+          <span v-if="row.payment_status === OrderPaymentStatus.Cancel" class="text-orange-500">Đã hủy</span>
+        </template>
+        <template #note-data="{ row }">
+          <span class="whitespace-nowrap overflow-hidden text-ellipsis block w-[200px]">{{ row.note }}</span>
         </template>
         <template #sale-data="{ row }">
           <div v-if="row.sale_name !== ''">{{ row.sale_name }}</div>
@@ -563,7 +571,7 @@ useSeoMeta({
             </UTooltip>
             <UTooltip
               v-if="row.status === OrderStatus.Processing"
-              text="Thanh toán thành công"
+              text="Duyệt đơn"
             >
               <UButton
                 :ui="{ rounded: 'rounded-full' }"
@@ -669,7 +677,7 @@ useSeoMeta({
           </template>
           <p v-if="statusType === 'paid'">
             Bạn có chắc chắn muốn chuyển trạng thái của đơn hàng này thành
-            <strong>đã thanh toán</strong> không ?
+            <strong>Thành công</strong> không ?
           </p>
           <UForm
             v-if="statusType === 'cancel'"

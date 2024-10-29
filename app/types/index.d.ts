@@ -155,4 +155,5 @@ export interface Order {
   total_amount: number
   created_at: Date
   status: (typeof OrderStatus)[keyof typeof OrderStatus]
+  order_code: number
 }
