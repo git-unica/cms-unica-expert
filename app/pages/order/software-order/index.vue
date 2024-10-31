@@ -10,7 +10,8 @@ import type { Order } from '~/types'
 const defaultColumns = [
   {
     key: 'order_code',
-    label: 'Mã đơn'
+    label: 'Mã đơn',
+    class: 'text-center'
   },
   {
     key: '_id',
@@ -23,12 +24,8 @@ const defaultColumns = [
   },
   {
     key: 'community_name',
-    label: 'Tên cộng đồng'
+    label: 'Cộng đồng'
   },
-  // {
-  //   key: 'package_code',
-  //   label: 'Gói phần mềm'
-  // },
   {
     key: 'period',
     label: 'Thời hạn'
@@ -220,39 +217,48 @@ const statusOptions = [{
   value: OrderStatus.Cancel,
   label: 'Đã hủy'
 }, {
-  value: OrderStatus.PayError,
-  label: 'Thanh toán lỗi'
-}, {
   value: OrderStatus.Refund,
   label: 'Hoàn tiền'
+}, {
+  value: OrderStatus.Removed,
+  label: 'Đã xóa'
 }
 ]
 
 // filter by payment status
 const selectedPaymentStatus = ref('')
 const paymentStatusOptions = [{
-  value: OrderPaymentStatus.Paid,
-  label: 'Đã thanh toán'
-}, {
   value: OrderPaymentStatus.NotPay,
-  label: 'Chưa thanh toán'
+  label: 'Chưa TT'
+}, {
+  value: OrderPaymentStatus.Paid,
+  label: 'Đã TT'
 }, {
   value: OrderPaymentStatus.Cancel,
   label: 'Đã hủy'
 }]
 
-watch([selectedDate, selectedStatus, selectedPaymentStatus], ([newSelectedDate, newSelectedStatus, newSelectedPaymentStatus]) => {
-  if (newSelectedDate) {
-    query['filter[from_date]'] = dayjs(newSelectedDate.start).toString()
-    query['filter[to_date]'] = dayjs(newSelectedDate.end).toString()
-  }
-
+watch([selectedStatus, selectedPaymentStatus], ([newSelectedStatus, newSelectedPaymentStatus]) => {
   if (newSelectedStatus !== '' && newSelectedStatus !== null) {
     query['filter[status]'] = newSelectedStatus
   }
 
   if (newSelectedPaymentStatus !== '' && newSelectedPaymentStatus !== null) {
     query['filter[payment_status]'] = newSelectedPaymentStatus
+  }
+})
+
+watch(() => selectedDate.value.start, (newStartDate) => {
+  if (newStartDate) {
+    selectedDate.value.start = newStartDate
+    query['filter[from_date]'] = dayjs(newStartDate).toString()
+  }
+})
+
+watch(() => selectedDate.value.end, (newEndDate) => {
+  if (newEndDate) {
+    selectedDate.value.end = newEndDate
+    query['filter[to_date]'] = dayjs(newEndDate).toString()
   }
 })
 
@@ -381,22 +387,21 @@ const onSearch = async () => {
   }
 
   query['page'] = 1
+  console.log('query search', query)
   await refresh()
 }
 
 const onResetFilter = async () => {
   delete query['filter[content_type]']
   delete query['filter[keyword]']
-  delete query['filter[from_date]']
-  delete query['filter[to_date]']
   delete query['filter[status]']
   delete query['filter[payment_status]']
   selectedContent.value = ''
   textSearch.value = ''
   selectedStatus.value = ''
   selectedPaymentStatus.value = ''
-  selectedDate.value.start = sub(new Date(), { days: 14 })
-  selectedDate.value.end = new Date()
+  delete query['filter[from_date]']
+  delete query['filter[to_date]']
   query['page'] = 1
   await refresh()
 }
@@ -424,15 +429,32 @@ useSeoMeta({
               :options="contentOptions"
               value-attribute="value"
               option-attribute="label"
-              class="w-[200px]"
+              class="w-[100px]"
+              :ui-menu="{
+                trigger: 'h-full'
+              }"
+              :ui="{
+                base: 'h-full'
+              }"
             />
             <UInput
               v-model="textSearch"
               placeholder="Tìm kiếm..."
+              class="w-[220px]"
+              :ui="{
+                base: 'h-full'
+              }"
             />
             <div class="flex justify-center items-center gap-2">
               <UPopover :popper="{ placement: 'bottom-start' }">
-                <UButton icon="i-heroicons-calendar-days-20-solid">
+                <UButton
+                  icon="i-heroicons-calendar-days-20-solid"
+                  :ui="{
+                    variant: {
+                      solid: 'bg-white text-gray-900 border border-solid border-[#ccc] hover:bg-[#ccc]'
+                    }
+                  }"
+                >
                   {{ format(selectedDate.start, 'd MMM, yyy') }} - {{ format(selectedDate.end, 'd MMM, yyy') }}
                 </UButton>
 
@@ -450,6 +472,12 @@ useSeoMeta({
               value-attribute="value"
               option-attribute="label"
               class="w-[200px]"
+              :ui-menu="{
+                trigger: 'h-full'
+              }"
+              :ui="{
+                base: 'h-full'
+              }"
             />
             <USelectMenu
               v-model="selectedPaymentStatus"
@@ -457,7 +485,13 @@ useSeoMeta({
               placeholder="Thanh toán"
               value-attribute="value"
               option-attribute="label"
-              class="w-[220px]"
+              class="w-[150px]"
+              :ui-menu="{
+                trigger: 'h-full'
+              }"
+              :ui="{
+                base: 'h-full'
+              }"
             />
             <div>
               <UButton
@@ -467,9 +501,12 @@ useSeoMeta({
                 variant="solid"
                 label="Button"
                 :trailing="false"
+                :ui="{
+                  base: 'h-full'
+                }"
                 @click="onSearch"
               >
-                Tìm kiếm
+                Tìm
               </UButton>
             </div>
             <UButton
@@ -477,12 +514,12 @@ useSeoMeta({
               size="sm"
               label="Button"
               :trailing="false"
-              @click="onResetFilter"
               :ui="{
                 variant: {
-                  solid: 'bg-[#808080] hover:bg-gray-400'
+                  solid: 'bg-[#94A3B8] hover:bg-gray-400'
                 }
               }"
+              @click="onResetFilter"
             >
               Bỏ lọc
             </UButton>
@@ -509,19 +546,33 @@ useSeoMeta({
         class="w-full"
         sort-mode="manual"
       >
+        <template #order_code-data="{ row }">
+          <div class="text-center font-bold">
+            <UTooltip
+              text="Chi tiết đơn"
+              :popper="{ placement: 'right' }"
+            >
+              <ULink
+                :to="'/order/software-order/' + row.order_code"
+              >
+                <span class="hover:text-[#ccc]">{{ row.order_code }}</span>
+              </ULink>
+            </UTooltip>
+          </div>
+        </template>
         <template #period-data="{ row }"> {{ row.period }} tháng </template>
         <template #total_amount-data="{ row }">
-          {{ numeral(row.total_amount).format() }} đ
+          <div class="text-right">{{ numeral(row.total_amount).format() }}</div>
         </template>
         <template #created_at-data="{ row }">
           {{ dayjs(row.created_at).format("DD/MM/YYYY HH:mm:ss ") }}
         </template>
         <template #status-data="{ row }">
-          <span v-if="row.status === OrderStatus.Processing" class="text-yellow-500">Chờ xử lý</span>
+          <span v-if="row.status === OrderStatus.Processing" class="text-orange-500">Chờ xử lý</span>
           <span v-if="row.status === OrderStatus.Paid" class="text-green-500">Thành công</span>
-          <span v-if="row.status === OrderStatus.Cancel" class="text-orange-500">Đã hủy</span>
-          <span v-if="row.status === OrderStatus.PayError" class="text-red-500">Thanh toán lỗi</span>
+          <span v-if="row.status === OrderStatus.Cancel" class="text-slate-400">Đã hủy</span>
           <span v-if="row.status === OrderStatus.Refund" class="text-teal-500">Hoàn tiền</span>
+          <span v-if="row.status === OrderStatus.Removed" class="text-red-500">Đã xóa</span>
         </template>
         <template #ref-data="{ row }">
           {{
@@ -531,15 +582,30 @@ useSeoMeta({
           }}
         </template>
         <template #payment-data="{ row }">
-          <span v-if="row.payment_status === OrderPaymentStatus.NotPay" class="text-yellow-500">Chưa thanh toán</span>
-          <span v-if="row.payment_status === OrderPaymentStatus.Paid" class="text-green-500">Đã thanh toán</span>
-          <span v-if="row.payment_status === OrderPaymentStatus.Cancel" class="text-orange-500">Đã hủy</span>
+          <span v-if="row.payment_status === OrderPaymentStatus.NotPay" class="text-orange-500">Chưa TT</span>
+          <span v-if="row.payment_status === OrderPaymentStatus.Paid" class="text-green-500">Đã TT</span>
+          <span v-if="row.payment_status === OrderPaymentStatus.Cancel" class="text-slate-400">Đã hủy</span>
         </template>
         <template #note-data="{ row }">
           <span class="whitespace-nowrap overflow-hidden text-ellipsis block w-[200px]">{{ row.note }}</span>
         </template>
         <template #sale-data="{ row }">
-          <div v-if="row.sale_name !== ''">{{ row.sale_name }}</div>
+          <div v-if="row.sale_name !== ''">
+            <div v-if="row.sale_avatar !== ''">
+              <UTooltip
+                :text="row.sale_name"
+                :popper="{ placement: 'right' }"
+              >
+                <UAvatar
+                  :src="row.sale_avatar"
+                  alt="Avatar"
+                />
+              </UTooltip>
+            </div>
+            <div v-else>
+              {{ row.sale_name }}
+            </div>
+          </div>
           <div v-else>
             <UTooltip
               text="Gán sale"
@@ -561,34 +627,42 @@ useSeoMeta({
           </div>
         </template>
         <template #action-data="{ row }">
-          <div class="flex gap-1 justify-end">
-            <UTooltip text="Chi tiết đơn">
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
-                icon="i-heroicons-eye-20-solid"
-                @click="redirectToOrderDetail(row)"
-              />
-            </UTooltip>
-            <UTooltip
-              v-if="row.status === OrderStatus.Processing"
-              text="Duyệt đơn"
-            >
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
-                color="green"
-                icon="i-heroicons-check-20-solid"
-                @click="openChangeStatusOrderModal(row, 'paid')"
-              />
-            </UTooltip>
+          <div class="flex gap-1 justify-center">
+            <UPopover mode="hover">
+              <UButton color="white" trailing-icon="i-heroicons-ellipsis-vertical-16-solid" />
 
-            <UTooltip v-if="row.status !== OrderStatus.Cancel" text="Hủy đơn">
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
-                color="orange"
-                icon="i-heroicons-x-mark-16-solid"
-                @click="openChangeStatusOrderModal(row, 'cancel')"
-              />
-            </UTooltip>
+              <template #panel>
+                <div class="flex flex-col gap-2 p-4">
+                  <UTooltip text="Chi tiết đơn">
+                    <UButton
+                      :ui="{ rounded: 'rounded-full' }"
+                      icon="i-heroicons-eye-20-solid"
+                      @click="redirectToOrderDetail(row)"
+                    />
+                  </UTooltip>
+                  <UTooltip
+                    v-if="row.status === OrderStatus.Processing"
+                    text="Duyệt đơn"
+                  >
+                    <UButton
+                      :ui="{ rounded: 'rounded-full' }"
+                      color="green"
+                      icon="i-heroicons-check-20-solid"
+                      @click="openChangeStatusOrderModal(row, 'paid')"
+                    />
+                  </UTooltip>
+
+                  <UTooltip v-if="row.status !== OrderStatus.Cancel" text="Hủy đơn">
+                    <UButton
+                      :ui="{ rounded: 'rounded-full' }"
+                      color="orange"
+                      icon="i-heroicons-x-mark-16-solid"
+                      @click="openChangeStatusOrderModal(row, 'cancel')"
+                    />
+                  </UTooltip>
+                </div>
+              </template>
+            </UPopover>
           </div>
         </template>
         <template #empty-state>

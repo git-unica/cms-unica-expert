@@ -2,13 +2,17 @@
 import numeral from 'numeral'
 import dayjs from 'dayjs'
 import { format, sub } from 'date-fns'
-import type { Order } from '~/types'
-import { OrderStatus } from '~/enums/order-status.enum'
+import type { Order, Role } from '~/types'
+import { OrderPaymentStatus, OrderStatus } from '~/enums/order-status.enum'
 import { useAuthStore } from '~/stores/auth'
-import { ECommunityOrderStatus } from '~/enums/community-order.enum'
+import { ECommunityOrderPaymentStatus, ECommunityOrderStatus } from '~/enums/community-order.enum'
 import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
+  {
+    key: 'order_code',
+    label: 'Mã đơn'
+  },
   {
     key: '_id',
     label: '#',
@@ -18,7 +22,7 @@ const defaultColumns = [
     label: 'Người mua'
   }, {
     key: 'community_name',
-    label: 'Tên cộng đồng'
+    label: 'Cộng đồng'
   },
   {
     key: 'course_name',
@@ -29,6 +33,18 @@ const defaultColumns = [
     label: 'Thời hạn'
   },
   {
+    key: 'sale',
+    label: 'Sale'
+  },
+  {
+    key: 'note',
+    label: 'Ghi chú'
+  },
+  {
+    key: 'ref',
+    label: 'Ref'
+  },
+  {
     key: 'total_amount',
     label: 'Tổng tiền'
   },
@@ -37,12 +53,16 @@ const defaultColumns = [
     label: 'Kiểu đơn'
   },
   {
-    key: 'created_at',
-    label: 'Ngày tạo'
+    key: 'payment',
+    label: 'Thanh toán'
   },
   {
     key: 'status',
     label: 'Trạng thái'
+  },
+  {
+    key: 'created_at',
+    label: 'Ngày tạo'
   },
   {
     key: 'action',
@@ -50,6 +70,18 @@ const defaultColumns = [
   }
 ]
 
+const { data: listRoles } = useFetch<Role[]>('/api/v1/admin/roles/list', {
+  headers: useRequestHeaders(['cookie'])
+})
+
+const listRolesCanProcessOrder = ref([])
+if (listRoles.value) {
+  for (const role of listRoles.value) {
+    if (role['name'] === ERole.Admin || role['name'] === ERole.Accountant || role['name'] === ERole.Sale) {
+      listRolesCanProcessOrder.value.push(role['_id'])
+    }
+  }
+}
 // filter by date range picker
 const selectedDate = ref({ start: sub(new Date(), { days: 14 }), end: new Date() })
 
@@ -57,10 +89,19 @@ const selectedDate = ref({ start: sub(new Date(), { days: 14 }), end: new Date()
 const selectedStatus = ref()
 const statusOptions = [{
   value: ECommunityOrderStatus.Processing,
-  label: 'Đang xử lý'
+  label: 'Chờ xử lý'
 }, {
   value: ECommunityOrderStatus.Paid,
-  label: 'Đã thanh toán'
+  label: 'Thành công'
+}, {
+  value: ECommunityOrderStatus.Cancel,
+  label: 'Đã hủy'
+}, {
+  value: ECommunityOrderStatus.Refund,
+  label: 'Hoàn tiền'
+}, {
+  value: ECommunityOrderStatus.Removed,
+  label: 'Đã xóa'
 }
 ]
 
@@ -72,26 +113,12 @@ const query = reactive({
   'sort[_id]': -1
 })
 
-watch([selectedDate, selectedStatus], ([newSelectedDate, newSelectedStatus]) => {
-  if (newSelectedDate) {
-    query['filter[fromDate]'] = dayjs(newSelectedDate.start).toString()
-    query['filter[toDate]'] = dayjs(newSelectedDate.end).toString()
-    query['page'] = 1
-    refresh()
-  }
-
-  if (newSelectedStatus !== '' && newSelectedStatus !== null) {
-    query['filter[status]'] = newSelectedStatus
-    query['page'] = 1
-    refresh()
-  }
-})
-
 const errorMsg = ref()
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
 const { data: orders, status, refresh } = await useFetch('/api/v1/community-order', {
   query,
   headers: useRequestHeaders(['cookie']),
+  watch: false,
   lazy: true,
   default: () => ({
     meta: {
@@ -144,7 +171,7 @@ const closeDeleteOrderModal = () => {
 
 // redirect detail
 const redirectToOrderDetail = async (row: Order) => {
-  await navigateTo({ path: '/order/community-order/' + row._id })
+  await navigateTo({ path: '/order/community-order/' + row.order_code })
 }
 
 // redirect to receipt
@@ -153,22 +180,19 @@ const redirectToReceipt = async (row: Order) => {
 }
 
 // reset
-const onResetFilter = () => {
-  if (query['filter[fromDate]']) {
-    delete query['filter[fromDate]']
-  }
-
-  if (query['filter[toDate]']) {
-    delete query['filter[toDate]']
-  }
-
-  if (Object.keys(query).includes('filter[status]')) {
-    delete query['filter[status]']
-  }
-
+const onResetFilter = async () => {
+  delete query['filter[content_type]']
+  delete query['filter[keyword]']
+  delete query['filter[status]']
+  delete query['filter[payment_status]']
+  selectedContent.value = ''
+  textSearch.value = ''
+  selectedStatus.value = ''
+  selectedPaymentStatus.value = ''
+  delete query['filter[from_date]']
+  delete query['filter[to_date]']
   query['page'] = 1
-  selectedStatus.value = undefined
-  refresh()
+  await refresh()
 }
 
 // user info
@@ -176,10 +200,174 @@ const checkUserRole = computed(() => {
   return user?.value.roles
 })
 
+const isCanProcessOrder = checkUserRole.value.some(item => listRolesCanProcessOrder.value.includes(item))
 const title = 'Đơn hàng cộng đồng'
 
 useSeoMeta({
   title
+})
+
+// chi tiết vai trò
+const queryRole = reactive({
+  keyword: 'sale'
+})
+const {
+  data: roles
+} = await useFetch('/api/v1/admin/roles', {
+  query: queryRole,
+  headers: useRequestHeaders(['cookie']),
+  lazy: true,
+  default: () => ({
+    data: []
+  }),
+  onResponseError({ response }) {
+    errorMsg.value = response._data?.message ?? ''
+  }
+})
+
+const rolesComputed = computed(() => {
+  return roles?.value?.data.map(role => role._id)
+})
+
+// chọn sale
+const isGetAll = ref(true)
+const selectedSale = ref('')
+const queryUser = reactive({
+  page,
+  'sort[_id]': -1,
+  'filter[roles][]': rolesComputed,
+  isGetAll
+})
+
+const {
+  data: userSales
+} = await useFetch('/api/v1/users', {
+  query: queryUser,
+  headers: useRequestHeaders(['cookie']),
+  lazy: true,
+  default: () => ({
+    data: []
+  }),
+  onResponseError({ response }) {
+    errorMsg.value = response._data?.message ?? ''
+  }
+})
+
+const userData = computed(() => {
+  return userSales.value
+    ? userSales.value.map((user) => {
+      return {
+        label: user.full_name,
+        value: user._id
+      }
+    })
+    : []
+})
+
+const isOpenChooseSaleModal = ref(false)
+const onChooseSale = async (orderId: string) => {
+  isOpenChooseSaleModal.value = true
+  selectedOrderId.value = orderId
+}
+
+const onAgreeChooseSale = async () => {
+  await useFetch(`/api/v1/community-order/assign-sale`, {
+    method: 'POST',
+    headers: useRequestHeaders(['cookie']),
+    body: {
+      order_id: selectedOrderId.value,
+      sale_id: selectedSale.value
+    },
+    onResponse({ response }) {
+      if (response.ok) {
+        isOpenChooseSaleModal.value = false
+        toast.add({ title: response._data.message, color: 'green' })
+        refresh()
+      } else {
+        isOpenChooseSaleModal.value = false
+        toast.add({ title: response._data.message, color: 'red' })
+      }
+    }
+  })
+}
+
+// bộ lọc
+const textSearch = ref('')
+const contentOptions = [{
+  value: 'order_code',
+  label: 'Mã đơn'
+}, {
+  value: 'name',
+  label: 'Họ tên'
+}, {
+  value: 'community',
+  label: 'Cộng đồng'
+}, {
+  value: 'ref',
+  label: 'Ref'
+}, {
+  value: 'sale',
+  label: 'Sale'
+}
+]
+const selectedContent = ref(contentOptions[0].value)
+
+const selectedPaymentStatus = ref('')
+const paymentStatusOptions = [{
+  value: OrderPaymentStatus.NotPay,
+  label: 'Chưa TT'
+}, {
+  value: OrderPaymentStatus.Paid,
+  label: 'Đã TT'
+}, {
+  value: OrderPaymentStatus.Cancel,
+  label: 'Đã hủy'
+}]
+
+const onSearch = async () => {
+  // await authStore.logout()
+  // navigateTo('/login')
+  if (selectedContent.value && textSearch.value) {
+    query['filter[content_type]'] = selectedContent.value
+    query['filter[keyword]'] = textSearch.value.trim()
+  } else {
+    delete query['filter[content_type]']
+    delete query['filter[keyword]']
+  }
+
+  query['page'] = 1
+  await refresh()
+}
+
+watch([selectedStatus, selectedPaymentStatus], ([newSelectedStatus, newSelectedPaymentStatus]) => {
+  if (newSelectedStatus !== '' && newSelectedStatus !== null) {
+    query['filter[status]'] = newSelectedStatus
+  }
+
+  if (newSelectedPaymentStatus !== '' && newSelectedPaymentStatus !== null) {
+    query['filter[payment_status]'] = newSelectedPaymentStatus
+  }
+})
+
+watch(() => selectedDate.value.start, (newStartDate) => {
+  if (newStartDate) {
+    selectedDate.value.start = newStartDate
+    query['filter[from_date]'] = dayjs(newStartDate).toString()
+  }
+})
+
+watch(() => selectedDate.value.end, (newEndDate) => {
+  if (newEndDate) {
+    selectedDate.value.end = newEndDate
+    query['filter[to_date]'] = dayjs(newEndDate).toString()
+  }
+})
+
+watch(page, (newPage) => {
+  if (newPage) {
+    query['page'] = newPage
+    refresh()
+  }
 })
 </script>
 
@@ -194,11 +382,38 @@ useSeoMeta({
 
       <UDashboardToolbar>
         <template #left>
-          <div class="flex gap-6">
+          <div class="flex gap-2">
+            <USelectMenu
+              v-model="selectedContent"
+              :options="contentOptions"
+              value-attribute="value"
+              option-attribute="label"
+              class="w-[100px]"
+              :ui-menu="{
+                trigger: 'h-full'
+              }"
+              :ui="{
+                base: 'h-full'
+              }"
+            />
+            <UInput
+              v-model="textSearch"
+              placeholder="Tìm kiếm..."
+              class="w-[220px]"
+              :ui="{
+                base: 'h-full'
+              }"
+            />
             <div class="flex justify-center items-center gap-2">
-              <h4>Lọc theo khoảng thời gian: </h4>
               <UPopover :popper="{ placement: 'bottom-start' }">
-                <UButton icon="i-heroicons-calendar-days-20-solid">
+                <UButton
+                  icon="i-heroicons-calendar-days-20-solid"
+                  :ui="{
+                    variant: {
+                      solid: 'bg-white text-gray-900 border border-solid border-[#ccc] hover:bg-[#ccc]'
+                    }
+                  }"
+                >
                   {{ format(selectedDate.start, 'd MMM, yyy') }} - {{ format(selectedDate.end, 'd MMM, yyy') }}
                 </UButton>
 
@@ -209,27 +424,63 @@ useSeoMeta({
                 </template>
               </UPopover>
             </div>
-            <div class="flex justify-center items-center gap-2">
-              <h4>Lọc theo trạng thái: </h4>
-              <USelectMenu
-                v-model="selectedStatus"
-                :options="statusOptions"
-                placeholder="Chọn trạng thái"
-                value-attribute="value"
-                option-attribute="label"
-                class="w-[200px]"
-              />
+            <USelectMenu
+              v-model="selectedStatus"
+              :options="statusOptions"
+              placeholder="Trạng thái"
+              value-attribute="value"
+              option-attribute="label"
+              class="w-[200px]"
+              :ui-menu="{
+                trigger: 'h-full'
+              }"
+              :ui="{
+                base: 'h-full'
+              }"
+            />
+            <USelectMenu
+              v-model="selectedPaymentStatus"
+              :options="paymentStatusOptions"
+              placeholder="Thanh toán"
+              value-attribute="value"
+              option-attribute="label"
+              class="w-[150px]"
+              :ui-menu="{
+                trigger: 'h-full'
+              }"
+              :ui="{
+                base: 'h-full'
+              }"
+            />
+            <div>
+              <UButton
+                icon="i-heroicons-magnifying-glass-solid"
+                size="sm"
+                color="primary"
+                variant="solid"
+                label="Button"
+                :trailing="false"
+                :ui="{
+                  base: 'h-full'
+                }"
+                @click="onSearch"
+              >
+                Tìm
+              </UButton>
             </div>
             <UButton
-              icon="i-heroicons-arrow-path-16-solid"
+              icon="i-heroicons-x-mark-20-solid"
               size="sm"
-              color="primary"
-              variant="solid"
               label="Button"
               :trailing="false"
+              :ui="{
+                variant: {
+                  solid: 'bg-[#94A3B8] hover:bg-gray-400'
+                }
+              }"
               @click="onResetFilter"
             >
-              Làm mới
+              Bỏ lọc
             </UButton>
           </div>
         </template>
@@ -256,46 +507,124 @@ useSeoMeta({
         class="w-full"
         sort-mode="manual"
       >
+        <template #order_code-data="{ row }">
+          <div class="text-center font-bold">
+            <UTooltip
+              text="Chi tiết đơn"
+              :popper="{ placement: 'right' }"
+            >
+              <ULink
+                :to="'/order/community-order/' + row.order_code"
+              >
+                <span class="hover:text-[#ccc]">{{ row.order_code }}</span>
+              </ULink>
+            </UTooltip>
+          </div>
+        </template>
         <template #period-data="{ row }">
           {{ row.period }} tháng
         </template>
         <template #total_amount-data="{ row }">
-          {{ numeral(row.total_amount).format() }} đ
+          <div class="text-right">{{ numeral(row.total_amount).format() }}</div>
         </template>
         <template #created_at-data="{ row }">
-          {{ dayjs(row.created_at).format('HH:mm DD/MM/YYYY') }}
+          {{ dayjs(row.created_at).format('DD/MM/YYYY HH:mm:ss') }}
         </template>
         <template #type-data="{ row }">
           {{ row.type === 1 ? 'Tham gia cộng đồng trả phí' : (row.type === 2 ? 'Mua khóa học' : '') }}
         </template>
         <template #status-data="{ row }">
-          {{ row.status === OrderStatus.Processing ? 'Đang xử lý' : (row.status === OrderStatus.Paid ? 'Đã thanh toán' : 'Đã hủy') }}
+          <span v-if="row.status === ECommunityOrderStatus.Processing" class="text-orange-500">Chờ xử lý</span>
+          <span v-if="row.status === ECommunityOrderStatus.Paid" class="text-green-500">Thành công</span>
+          <span v-if="row.status === ECommunityOrderStatus.Cancel" class="text-slate-400">Đã hủy</span>
+          <span v-if="row.status === ECommunityOrderStatus.Refund" class="text-teal-500">Hoàn tiền</span>
+          <span v-if="row.status === ECommunityOrderStatus.Removed" class="text-red-500">Đã xóa</span>
+        </template>
+        <template #ref-data="{ row }">
+          {{
+            row.ref !== ''
+              ? row.ref
+              : '-'
+          }}
+        </template>
+        <template #payment-data="{ row }">
+          <span v-if="row.payment_status === ECommunityOrderPaymentStatus.NotPay" class="text-orange-500">Chưa TT</span>
+          <span v-if="row.payment_status === ECommunityOrderPaymentStatus.Paid" class="text-green-500">Đã TT</span>
+          <span v-if="row.payment_status === ECommunityOrderPaymentStatus.Cancel" class="text-slate-400">Đã hủy</span>
+        </template>
+        <template #note-data="{ row }">
+          <span class="whitespace-nowrap overflow-hidden text-ellipsis block w-[200px]">{{ row.note }}</span>
+        </template>
+        <template #sale-data="{ row }">
+          <div v-if="row.sale_name !== ''">
+            <div v-if="row.sale_avatar !== ''">
+              <UTooltip
+                :text="row.sale_name"
+                :popper="{ placement: 'right' }"
+              >
+                <UAvatar
+                  :src="row.sale_avatar"
+                  alt="Avatar"
+                />
+              </UTooltip>
+            </div>
+            <div v-else>
+              {{ row.sale_name }}
+            </div>
+          </div>
+          <div v-else>
+            <UTooltip
+              text="Gán sale"
+              :popper="{ placement: 'right' }"
+            >
+              <UButton
+                icon="i-heroicons-user-plus"
+                size="sm"
+                :ui="{
+                  rounded: 'rounded-full',
+                  variant: {
+                    solid: 'bg-white-500 text-black hover:bg-white-500 '
+                  }
+                }"
+                class="text-gray-500"
+                @click="onChooseSale(row._id)"
+              />
+            </UTooltip>
+          </div>
         </template>
         <template #action-data="{ row }">
-          <div class="flex gap-1">
-            <UTooltip text="Chi tiết đơn">
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
-                icon="i-heroicons-eye-20-solid"
-                @click="redirectToOrderDetail(row)"
-              />
-            </UTooltip>
-            <UTooltip text="Phiếu thu" v-if="checkUserRole.includes(ERole.Accountant)">
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
-                icon="i-heroicons-clipboard-document-check-solid"
-                color="orange"
-                @click="redirectToReceipt(row)"
-              />
-            </UTooltip>
-            <UTooltip text="Xóa đơn" v-if="checkUserRole.includes(ERole.Admin)">
-              <UButton
-                :ui="{ rounded: 'rounded-full' }"
-                color="red"
-                icon="i-heroicons-trash"
-                @click="openDeleteOrderModal(row)"
-              />
-            </UTooltip>
+          <div class="flex gap-1 justify-center">
+            <UPopover mode="hover">
+              <UButton color="white" trailing-icon="i-heroicons-ellipsis-vertical-16-solid" />
+
+              <template #panel>
+                <div class="flex flex-col gap-2 p-4">
+                  <UTooltip text="Chi tiết đơn">
+                    <UButton
+                      :ui="{ rounded: 'rounded-full' }"
+                      icon="i-heroicons-eye-20-solid"
+                      @click="redirectToOrderDetail(row)"
+                    />
+                  </UTooltip>
+                  <UTooltip text="Phiếu thu" v-if="isCanProcessOrder">
+                    <UButton
+                      :ui="{ rounded: 'rounded-full' }"
+                      icon="i-heroicons-clipboard-document-check-solid"
+                      color="orange"
+                      @click="redirectToReceipt(row)"
+                    />
+                  </UTooltip>
+                  <UTooltip text="Xóa đơn" v-if="isCanProcessOrder">
+                    <UButton
+                      :ui="{ rounded: 'rounded-full' }"
+                      color="red"
+                      icon="i-heroicons-trash"
+                      @click="openDeleteOrderModal(row)"
+                    />
+                  </UTooltip>
+                </div>
+              </template>
+            </UPopover>
           </div>
         </template>
         <template #empty-state>
@@ -334,6 +663,62 @@ useSeoMeta({
           :total="orders.meta.itemCount"
         />
       </div>
+
+      <!-- modal chọn sale -->
+      <UModal
+        v-model="isOpenChooseSaleModal"
+        :ui="{ container: 'items-start sm:items-start' }"
+        prevent-close
+      >
+        <UCard
+          :ui="{
+            ring: '',
+            divide: 'divide-y divide-gray-100 dark:divide-gray-800'
+          }"
+        >
+          <template #header>
+            <div class="flex justify-between">
+              <h3 class="font-bold text-2xl">Gán sale xử lý đơn hàng</h3>
+              <UButton
+                color="gray"
+                variant="ghost"
+                icon="i-heroicons-x-mark-20-solid"
+                class="-my-1"
+                @click="isOpenChooseSaleModal = false"
+              />
+            </div>
+          </template>
+          <div class="flex flex-col w-full gap-2">
+            <p>Danh sách sales</p>
+            <USelectMenu
+              clear-search-on-close
+              class="w-full"
+              placeholder="--- Chọn sale ---"
+              :options="userData"
+              searchable
+              searchable-placeholder="Tìm kiếm sale..."
+              v-model="selectedSale"
+              value-attribute="value"
+              option-attribute="label"
+            >
+              <template #option-empty="{ query }">
+                Không tìm thấy sale <q>{{ query }}</q>
+              </template>
+            </USelectMenu>
+          </div>
+          <template #footer>
+            <div class="flex gap-2 justify-end">
+              <UButton
+                label="Đồng ý"
+                color="primary"
+                :ui="{ padding: { sm: 'px-5 py-2' } }"
+                @click="onAgreeChooseSale"
+              />
+            </div>
+          </template>
+        </UCard>
+      </UModal>
+      <!---->
     </UDashboardPanel>
   </UDashboardPage>
 </template>

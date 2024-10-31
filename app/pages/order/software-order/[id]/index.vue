@@ -6,7 +6,7 @@ import { type InferType, number, object, string, ref as YupRef } from 'yup'
 import { OrderPaymentStatus, OrderStatus } from '~/enums/order-status.enum'
 import type { FormSubmitEvent } from '#ui/types'
 
-const { text, copy, copied, isSupported } = useClipboard({ legacy: true })
+const { copy, copied, isSupported } = useClipboard({ legacy: true })
 const route = useRoute()
 const orderCode = route?.params?.id
 const { data: orderDetail, refresh } = await useFetch(`/api/v1/order/${orderCode}`, {
@@ -25,25 +25,9 @@ const { data: orderDetail, refresh } = await useFetch(`/api/v1/order/${orderCode
 })
 
 const page = ref(1)
-const errorMsg = ref()
 const orderDetailData = computed(() => {
   return orderDetail.value
 })
-
-const periodOptions = [{
-  value: 1,
-  label: '1 tháng'
-}, {
-  value: 3,
-  label: '3 tháng'
-}, {
-  value: 6,
-  label: '6 tháng'
-}, {
-  value: 12,
-  label: '12 tháng'
-}
-]
 
 const statusOptions = [{
   value: OrderStatus.Processing,
@@ -55,8 +39,8 @@ const statusOptions = [{
   value: OrderStatus.Cancel,
   label: 'Đã hủy'
 }, {
-  value: OrderStatus.PayError,
-  label: 'Thanh toán lỗi'
+  value: OrderStatus.Removed,
+  label: 'Đã xóa'
 }, {
   value: OrderStatus.Refund,
   label: 'Hoàn tiền'
@@ -130,7 +114,7 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
                     ? 'Hoàn tiền'
                     : (orderDetailData.value[key] === OrderStatus.Cancel
                         ? 'Đã hủy'
-                        : (orderDetailData.value[key] === OrderStatus.PayError ? 'Thanh toán lỗi' : ''))))
+                        : (orderDetailData.value[key] === OrderStatus.Removed ? 'Đã xóa' : ''))))
           const toStatus = payload[key] === OrderStatus.Processing
             ? 'Chờ xử lý'
             : (payload[key] === OrderStatus.Paid
@@ -139,7 +123,7 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
                     ? 'Hoàn tiền'
                     : (payload[key] === OrderStatus.Cancel
                         ? 'Đã hủy'
-                        : (payload[key] === OrderStatus.PayError ? 'Thanh toán lỗi' : ''))))
+                        : (payload[key] === OrderStatus.Removed ? 'Đã xóa' : ''))))
           payload['content_note'].push({
             message: `Thay đổi trạng thái từ ${fromStatus} thành ${toStatus}`
           })
@@ -357,7 +341,7 @@ const listCommissionLink = ref('/order/software-order/' + orderCode + '/list-use
               option-attribute="label"
             />
             <span v-if="orderDetailData.status === OrderStatus.Paid || orderDetailData.status === OrderStatus.Cancel">
-              {{ paymentStatusOptions.filter(item => item.value === state.payment_status) ? statusOptions.filter(item => item.value === state.payment_status)[0]['label'] : '' }}
+              {{ paymentStatusOptions.filter(item => item.value === state.payment_status) ? paymentStatusOptions.filter(item => item.value === state.payment_status)[0]['label'] : '' }}
             </span>
           </UFormGroup>
           <UFormGroup
