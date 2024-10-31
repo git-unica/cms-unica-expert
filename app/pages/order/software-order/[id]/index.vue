@@ -60,6 +60,8 @@ const paymentStatusOptions = [{
 
 const state = reactive({
   buyer_name: orderDetailData.value.buyer !== null ? orderDetailData.value.buyer.full_name : undefined,
+  buyer_email: orderDetailData.value.buyer !== null ? orderDetailData.value.buyer.email : undefined,
+  buyer_phone: orderDetailData.value.buyer !== null ? orderDetailData.value.buyer.phone : undefined,
   community_name: orderDetailData.value.community !== null ? orderDetailData.value.community.name : undefined,
   package_code: orderDetailData.value.package_code !== null ? orderDetailData.value.package_code : undefined,
   period: orderDetailData.value.period,
@@ -243,6 +245,12 @@ const onApproveOrder = async () => {
 
 // Danh sách chia hoa hồng
 const listCommissionLink = ref('/order/software-order/' + orderCode + '/list-user-commission')
+
+// chỉnh sửa doanh thu
+const isEditRevenue = ref(false)
+const onEditRevenue = () => {
+  isEditRevenue.value = !isEditRevenue.value
+}
 </script>
 
 <template>
@@ -271,57 +279,181 @@ const listCommissionLink = ref('/order/software-order/' + orderCode + '/list-use
         class="gap-4 px-4 py-4"
         @submit="onSubmit"
       >
-        <div class="w-full grid grid-cols-4 gap-4 px-4 py-4">
-          <UFormGroup
-            label="Người mua"
-            name="buyer_name"
-          >
-            <label for="">{{ state.buyer_name }}</label>
-          </UFormGroup>
-          <UFormGroup
-            label="Tên cộng đồng"
-            name="community_name"
-          >
-            <label for="">{{ state.community_name }}</label>
-          </UFormGroup>
-          <UFormGroup
-            label="Gói phần mềm"
-            name="package_code"
-          >
-            <label for="">{{ state.package_code }}</label>
-          </UFormGroup>
-          <UFormGroup
-            label="Thời hạn"
-            name="period"
-          >
-            <label for="">{{ state.period + ' tháng' }}</label>
-          </UFormGroup>
-          <UFormGroup
-            label="Tổng tiền"
-            name="total_amount"
-          >
-            <label for="">{{ state.total_amount ? numeral(orderDetailData.total_amount).format() + ' VND' : 0 }}</label>
-          </UFormGroup>
-          <UFormGroup
-            label="Ngày tạo"
-            name="created_at"
-          >
-            <label for="">{{ state.created_at ? dayjs(orderDetailData.created_at).format('DD/MM/YYYY HH:mm:ss') : 'Chưa có thông tin' }}</label>
-          </UFormGroup>
-          <UFormGroup
-            label="Trạng thái"
-            name="status"
-          >
-            <USelectMenu
-              v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
-              v-model="state.status"
-              :options="statusOptions"
-              value-attribute="value"
-              option-attribute="label"
-            />
-            <span v-if="orderDetailData.status === OrderStatus.Paid">Thành công</span>
-            <span v-if="orderDetailData.status === OrderStatus.Cancel">Đã hủy</span>
-          </UFormGroup>
+        <div class="w-full grid grid-cols-3 gap-4 px-4 py-4">
+          <div class="flex flex-col gap-6">
+            <UFormGroup
+              label="Người mua"
+              name="buyer_name"
+              class="min-h-14"
+            >
+              <label for="">{{ state.buyer_name }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Email"
+              name="buyer_email"
+              class="min-h-14"
+            >
+              <label for="">{{ state.buyer_email }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="SĐT"
+              name="buyer_phone"
+              class="min-h-14"
+            >
+              <label for="">{{ state.buyer_phone }}</label>
+            </UFormGroup>
+          </div>
+          <div class="flex flex-col gap-6">
+            <UFormGroup
+              label="Trạng thái"
+              name="status"
+              class="min-h-14"
+            >
+              <USelectMenu
+                v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
+                v-model="state.status"
+                :options="statusOptions"
+                value-attribute="value"
+                option-attribute="label"
+              />
+              <span v-if="orderDetailData.status === OrderStatus.Paid">Thành công</span>
+              <span v-if="orderDetailData.status === OrderStatus.Cancel">Đã hủy</span>
+            </UFormGroup>
+            <UFormGroup
+              label="Thanh toán"
+              name="payment_status"
+              class="min-h-14"
+            >
+              <USelectMenu
+                v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
+                v-model="state.payment_status"
+                :options="paymentStatusOptions"
+                value-attribute="value"
+                option-attribute="label"
+              />
+              <span v-if="orderDetailData.status === OrderStatus.Paid || orderDetailData.status === OrderStatus.Cancel">
+                {{ paymentStatusOptions.filter(item => item.value === state.payment_status) ? paymentStatusOptions.filter(item => item.value === state.payment_status)[0]['label'] : '' }}
+              </span>
+            </UFormGroup>
+            <UFormGroup
+              label="Tổng tiền"
+              name="total_amount"
+              class="min-h-14"
+            >
+              <label for="">{{ state.total_amount ? numeral(orderDetailData.total_amount).format() + ' VND' : 0 }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Doanh thu"
+              name="revenue"
+              class="min-h-14"
+            >
+              <div class="flex gap-2 items-end">
+                <UInput
+                  v-if="orderDetailData.status !== OrderStatus.Cancel && isEditRevenue"
+                  v-model="state.revenue"
+                  :ui="{
+                    wrapper: 'h-full',
+                    base: 'h-full'
+                  }"
+                >
+                  <template #trailing>
+                    <span class="text-gray-500 dark:text-gray-400 text-xs">VND</span>
+                  </template>
+                </UInput>
+                <label for="" v-if="!isEditRevenue">{{ state.revenue ? numeral(orderDetailData.revenue).format() + ' VND' : 0 }}</label>
+                <UTooltip text="Chỉnh sửa">
+                  <UButton
+                    icon="i-heroicons-pencil-square"
+                    size="sm"
+                    color="primary"
+                    square
+                    variant="solid"
+                    :ui="{
+                      variant: {
+                        solid: 'bg-white text-black border border-solid border-[#ccc] hover:bg-[#ccc]'
+                      }
+                    }"
+                    @click="onEditRevenue"
+                  />
+                </UTooltip>
+              </div>
+            </UFormGroup>
+            <UFormGroup
+              label="Giảm giá"
+              name="discount_value"
+              class="min-h-14"
+            >
+              <label for="">{{ state.discount_value }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Link thanh toán"
+              name="payment_link"
+              :ui="{
+                container: 'flex gap-2'
+              }"
+              class="min-h-14"
+            >
+              <UInput
+                v-model="state.payment_link"
+                class="w-3/4"
+                disabled
+              />
+              <div
+                v-if="isSupported"
+                class="w-1/4"
+              >
+                <UButton
+                  class="min-h-8 h-8 px-3 py-2 flex justify-center items-center w-full"
+                  :ui="{
+                    variant: {
+                      solid: 'bg-white text-black border border-solid border-[#ccc] hover:bg-[#ccc] hover:text-white'
+                    }
+                  }"
+                  @click="copy(state.payment_link)"
+                >
+                  <span v-if="!copied">Copy</span>
+                  <span v-else>Copied!</span>
+                </UButton>
+              </div>
+            </UFormGroup>
+          </div>
+          <div class="flex flex-col gap-6">
+            <UFormGroup
+              label="Tên cộng đồng"
+              name="community_name"
+              class="min-h-14"
+            >
+              <label for="">{{ state.community_name }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Gói phần mềm"
+              name="package_code"
+              class="min-h-14"
+            >
+              <label for="">{{ state.package_code }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Thời hạn"
+              name="period"
+              class="min-h-14"
+            >
+              <label for="">{{ state.period + ' tháng' }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Ngày tạo"
+              name="created_at"
+              class="min-h-14"
+            >
+              <label for="">{{ state.created_at ? dayjs(orderDetailData.created_at).format('DD/MM/YYYY HH:mm:ss') : 'Chưa có thông tin' }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Ngày thanh toán"
+              name="payment_date"
+              class="min-h-14"
+            >
+              <label for="">{{ state.payment_date ? dayjs(state.payment_date).format('DD/MM/YYYY HH:mm:ss') : 'Không có thông tin' }}</label>
+            </UFormGroup>
+          </div>
           <!--          <UFormGroup v-if="orderDetailData.status === OrderStatus.Cancel" label="Lý do hủy đơn" name="cancel_reason"> -->
           <!--            <UTextarea -->
           <!--              v-model="state.cancel_reason" -->
@@ -329,72 +461,6 @@ const listCommissionLink = ref('/order/software-order/' + orderCode + '/list-use
           <!--              :rows="4" -->
           <!--            /> -->
           <!--          </UFormGroup> -->
-          <UFormGroup
-            label="Thanh toán"
-            name="payment_status"
-          >
-            <USelectMenu
-              v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
-              v-model="state.payment_status"
-              :options="paymentStatusOptions"
-              value-attribute="value"
-              option-attribute="label"
-            />
-            <span v-if="orderDetailData.status === OrderStatus.Paid || orderDetailData.status === OrderStatus.Cancel">
-              {{ paymentStatusOptions.filter(item => item.value === state.payment_status) ? paymentStatusOptions.filter(item => item.value === state.payment_status)[0]['label'] : '' }}
-            </span>
-          </UFormGroup>
-          <UFormGroup
-            label="Giảm giá"
-            name="discount_value"
-          >
-            <label for="">{{ state.discount_value }}</label>
-          </UFormGroup>
-          <UFormGroup
-            label="Doanh thu"
-            name="revenue"
-          >
-            <UInput
-              v-model="state.revenue"
-              v-if="orderDetailData.status !== OrderStatus.Cancel"
-            >
-              <template #trailing>
-                <span class="text-gray-500 dark:text-gray-400 text-xs">VND</span>
-              </template>
-            </UInput>
-            <span v-else>{{ state.revenue ? numeral(orderDetailData.revenue).format() + ' VND' : 0 }}</span>
-          </UFormGroup>
-          <UFormGroup
-            label="Ngày thanh toán"
-            name="payment_date"
-          >
-            <label for="">{{ state.payment_date ? dayjs(state.payment_date).format('DD/MM/YYYY HH:mm:ss') : 'Chưa có thông tin' }}</label>
-          </UFormGroup>
-          <UFormGroup
-            label="Link thanh toán"
-            name="payment_link"
-            :ui="{
-              container: 'flex gap-2'
-            }"
-          >
-            <UInput
-              v-model="state.payment_link"
-              class="w-3/4"
-              disabled
-            />
-            <div
-              v-if="isSupported"
-              class="w-1/4"
-            >
-              <UButton
-                class="min-h-8 h-8 px-3 py-2 flex justify-center items-center w-full"
-                @click="copy(state.payment_link)"
-              >
-                <span v-if="!copied">Copy</span>
-                <span v-else>Copied!</span>
-              </UButton>
-            </div>
-          </UFormGroup>
         </div>
         <UFormGroup
           label="Ghi chú"
