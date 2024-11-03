@@ -1,18 +1,16 @@
-import type { User } from '~/types'
-
 interface AuthenticatedNestSession {
   isAuthenticated: true
-  user: User
+  userId: string
 }
 
 interface UnauthenticatedNestSession {
   isAuthenticated: false
-  user?: undefined
+  userId?: undefined
 }
 
 interface UnknownNestSession {
   isAuthenticated?: undefined
-  user?: undefined
+  userId?: undefined
 }
 
 type NestSession =

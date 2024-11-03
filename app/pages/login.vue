@@ -35,7 +35,7 @@ const password = ref()
 
 if (isLogin.value) navigateTo('/')
 
-const { fetch, session } = useNestSession()
+const { fetch } = useNestSession()
 const { status, execute: login } = useFetch(`/api/v1/auth/login`, {
   method: 'POST',
   headers: useRequestHeaders(['cookie']),
@@ -46,7 +46,7 @@ const { status, execute: login } = useFetch(`/api/v1/auth/login`, {
   onResponse: async ({ response }) => {
     if (response.ok) {
       await fetch()
-      authStore.setUserInfo(session.value?.user)
+      await authStore.getUserInfo()
       navigateTo('/')
     }
   },
