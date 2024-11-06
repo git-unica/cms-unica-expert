@@ -49,10 +49,10 @@ const statusOptions = [{
 
 const paymentStatusOptions = [{
   value: OrderPaymentStatus.Paid,
-  label: 'Đã thanh toán'
+  label: 'Đã TT'
 }, {
   value: OrderPaymentStatus.NotPay,
-  label: 'Chưa thanh toán'
+  label: 'Chưa TT'
 }, {
   value: OrderPaymentStatus.Cancel,
   label: 'Đã hủy'
@@ -65,7 +65,9 @@ const state = reactive({
   community_name: orderDetailData.value.community !== null ? orderDetailData.value.community.name : undefined,
   package_code: orderDetailData.value.package_code !== null ? orderDetailData.value.package_code : undefined,
   period: orderDetailData.value.period,
-  total_amount: orderDetailData.value.total_amount !== null ? orderDetailData.value.total_amount : undefined,
+  origin_total_amount: orderDetailData.value.origin_total_amount,
+  money_discount_from_old_package: orderDetailData.value.money_discount_from_old_package,
+  total_amount: orderDetailData.value.total_amount,
   created_at: orderDetailData.value.created_at !== null ? orderDetailData.value.created_at : undefined,
   status: orderDetailData.value.status,
   payment_status: orderDetailData.value.payment_status,
@@ -74,9 +76,13 @@ const state = reactive({
   payment_date: orderDetailData.value.payment_date ? orderDetailData.value.payment_date : '',
   revenue: orderDetailData.value.revenue,
   discount_value: orderDetailData.value.discount_value,
-  payment_link: orderDetailData.value.payment_link
+  short_payment_link: orderDetailData.value.short_payment_link,
+  ref: orderDetailData.value.ref,
+  sale: orderDetailData.value.sale,
+  pay_gate: orderDetailData.value.pay_gate,
+  pay_gate_fee: orderDetailData.value.pay_gate_fee
 })
-
+console.log('state', state)
 watchEffect(() => {
   if (orderDetail.value) {
     Object.assign(state, orderDetail.value)
@@ -251,6 +257,29 @@ const isEditRevenue = ref(false)
 const onEditRevenue = () => {
   isEditRevenue.value = !isEditRevenue.value
 }
+
+// xử lý format tiền
+numeral.locale('vn')
+if (!numeral.locales.hasOwnProperty('vn')) {
+  numeral.register('locale', 'vn', {
+    delimiters: {
+      thousands: '.',
+      decimal: ','
+    },
+    abbreviations: {
+      thousand: 'k',
+      million: 'm',
+      billion: 'b',
+      trillion: 't'
+    },
+    ordinal: function (number) {
+      return number.toString()
+    },
+    currency: {
+      symbol: ' VND'
+    }
+  })
+}
 </script>
 
 <template>
@@ -267,22 +296,18 @@ const onEditRevenue = () => {
         :ui="{
           right: 'w-1/4'
         }"
-      >
-        <template #right>
-          <span class="ml-4"><strong>Sale:</strong> {{ orderDetailData.sale ? orderDetailData.sale.full_name : 'Chưa gán người xử lý' }}</span>
-        </template>
-      </UDashboardNavbar>
-
+      />
       <UForm
         :schema="schema"
         :state="state"
         class="gap-4 px-4 py-4"
         @submit="onSubmit"
       >
-        <div class="w-full grid grid-cols-3 gap-4 px-4 py-4">
+        <div class="w-full grid grid-cols-4 gap-4 px-4 py-4">
+          <!---->
           <div class="flex flex-col gap-6">
             <UFormGroup
-              label="Người mua"
+              label="Họ tên"
               name="buyer_name"
               class="min-h-14"
             >
@@ -296,51 +321,57 @@ const onEditRevenue = () => {
               <label for="">{{ state.buyer_email }}</label>
             </UFormGroup>
             <UFormGroup
-              label="SĐT"
+              label="Phone"
               name="buyer_phone"
               class="min-h-14"
             >
               <label for="">{{ state.buyer_phone }}</label>
             </UFormGroup>
+            <UFormGroup
+              label="Ref"
+              name="ref"
+              class="min-h-14"
+            >
+              <label for="">{{ state.ref ? state.ref : '-' }}</label>
+            </UFormGroup>
           </div>
+          <!---->
+          <!---->
           <div class="flex flex-col gap-6">
             <UFormGroup
-              label="Trạng thái"
-              name="status"
-              class="min-h-14"
-            >
-              <USelectMenu
-                v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
-                v-model="state.status"
-                :options="statusOptions"
-                value-attribute="value"
-                option-attribute="label"
-              />
-              <span v-if="orderDetailData.status === OrderStatus.Paid">Thành công</span>
-              <span v-if="orderDetailData.status === OrderStatus.Cancel">Đã hủy</span>
-            </UFormGroup>
-            <UFormGroup
-              label="Thanh toán"
-              name="payment_status"
-              class="min-h-14"
-            >
-              <USelectMenu
-                v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
-                v-model="state.payment_status"
-                :options="paymentStatusOptions"
-                value-attribute="value"
-                option-attribute="label"
-              />
-              <span v-if="orderDetailData.status === OrderStatus.Paid || orderDetailData.status === OrderStatus.Cancel">
-                {{ paymentStatusOptions.filter(item => item.value === state.payment_status) ? paymentStatusOptions.filter(item => item.value === state.payment_status)[0]['label'] : '' }}
-              </span>
-            </UFormGroup>
-            <UFormGroup
               label="Tổng tiền"
-              name="total_amount"
+              name="origin_total_amount"
               class="min-h-14"
             >
-              <label for="">{{ state.total_amount ? numeral(orderDetailData.total_amount).format() + ' VND' : 0 }}</label>
+              <label for="">{{ state.origin_total_amount ? numeral(state.origin_total_amount).format() : 0 }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Giảm trừ gói cũ"
+              name="money_discount_from_old_package"
+              class="min-h-14"
+            >
+              <label for="">{{ state.money_discount_from_old_package ? numeral(state.money_discount_from_old_package).format() : 0 }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Cổng thanh toán"
+              name="pay_gate"
+              class="min-h-14"
+            >
+              <label for="">{{ state.pay_gate ? (state.pay_gate === 'Bank_Tranfer' ? 'Chuyển khoản ngân hàng' : state.pay_gate ) : '-' }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Phí cổng thanh toán"
+              name="pay_gate_fee"
+              class="min-h-14"
+            >
+              <label for="">{{ state.pay_gate_fee ? state.pay_gate_fee : '-' }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Giảm giá"
+              name="discount_value"
+              class="min-h-14"
+            >
+              <label for="">{{ state.discount_value + ' %' }} ({{ state.origin_total_amount * state.discount_value/100 }})</label>
             </UFormGroup>
             <UFormGroup
               label="Doanh thu"
@@ -356,11 +387,13 @@ const onEditRevenue = () => {
                     base: 'h-full'
                   }"
                 >
-                  <template #trailing>
-                    <span class="text-gray-500 dark:text-gray-400 text-xs">VND</span>
-                  </template>
                 </UInput>
-                <label for="" v-if="!isEditRevenue">{{ state.revenue ? numeral(orderDetailData.revenue).format() + ' VND' : 0 }}</label>
+                <label
+                  v-if="!isEditRevenue"
+                  for=""
+                >
+                  {{ state.revenue ? numeral(orderDetailData.revenue).format() : 0 }}
+                </label>
                 <UTooltip text="Chỉnh sửa">
                   <UButton
                     icon="i-heroicons-pencil-square"
@@ -370,7 +403,7 @@ const onEditRevenue = () => {
                     variant="solid"
                     :ui="{
                       variant: {
-                        solid: 'bg-white text-black border border-solid border-[#ccc] hover:bg-[#ccc]'
+                        solid: 'bg-white text-black  hover:bg-[#ccc]'
                       }
                     }"
                     @click="onEditRevenue"
@@ -379,22 +412,15 @@ const onEditRevenue = () => {
               </div>
             </UFormGroup>
             <UFormGroup
-              label="Giảm giá"
-              name="discount_value"
-              class="min-h-14"
-            >
-              <label for="">{{ state.discount_value }}</label>
-            </UFormGroup>
-            <UFormGroup
               label="Link thanh toán"
-              name="payment_link"
+              name="short_payment_link"
               :ui="{
                 container: 'flex gap-2'
               }"
               class="min-h-14"
             >
               <UInput
-                v-model="state.payment_link"
+                v-model="state.short_payment_link"
                 class="w-3/4"
                 disabled
               />
@@ -409,7 +435,7 @@ const onEditRevenue = () => {
                       solid: 'bg-white text-black border border-solid border-[#ccc] hover:bg-[#ccc] hover:text-white'
                     }
                   }"
-                  @click="copy(state.payment_link)"
+                  @click="copy(state.short_payment_link)"
                 >
                   <span v-if="!copied">Copy</span>
                   <span v-else>Copied!</span>
@@ -417,23 +443,86 @@ const onEditRevenue = () => {
               </div>
             </UFormGroup>
           </div>
+          <!---->
+          <!---->
           <div class="flex flex-col gap-6">
             <UFormGroup
-              label="Tên cộng đồng"
+              label="Sale"
+              name="sale"
+              class="min-h-14"
+            >
+              <label for="">{{ state.sale ? state.sale.full_name : '-' }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Trạng thái"
+              name="status"
+              class="min-h-14"
+            >
+              <USelectMenu
+                v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
+                v-model="state.status"
+                :options="statusOptions"
+                value-attribute="value"
+                option-attribute="label"
+                :ui="{
+                  base: 'w-1/2'
+                }"
+                :ui-menu="{
+                  container: '!w-1/2 !left-0'
+                }"
+              />
+              <span v-if="orderDetailData.status === OrderStatus.Paid">Thành công</span>
+              <span v-if="orderDetailData.status === OrderStatus.Cancel">Đã hủy</span>
+            </UFormGroup>
+            <UFormGroup
+              label="Thanh toán"
+              name="payment_status"
+              class="min-h-14"
+            >
+              <USelectMenu
+                v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
+                v-model="state.payment_status"
+                :options="paymentStatusOptions"
+                value-attribute="value"
+                option-attribute="label"
+                :ui="{
+                  base: 'w-1/2'
+                }"
+                :ui-menu="{
+                  container: '!w-1/2 !left-0'
+                }"
+              />
+              <span v-if="orderDetailData.status === OrderStatus.Paid || orderDetailData.status === OrderStatus.Cancel">
+                {{ paymentStatusOptions.filter(item => item.value === state.payment_status) ? paymentStatusOptions.filter(item => item.value === state.payment_status)[0]['label'] : '' }}
+              </span>
+            </UFormGroup>
+            <UFormGroup
+              label="Ngày thanh toán"
+              name="payment_date"
+              class="min-h-14"
+            >
+              <label for="">{{ state.payment_date ? dayjs(state.payment_date).format('DD/MM/YYYY HH:mm:ss') : '-' }}</label>
+            </UFormGroup>
+          </div>
+          <!---->
+          <!---->
+          <div class="flex flex-col gap-6">
+            <UFormGroup
+              label="Cộng đồng"
               name="community_name"
               class="min-h-14"
             >
               <label for="">{{ state.community_name }}</label>
             </UFormGroup>
             <UFormGroup
-              label="Gói phần mềm"
+              label="Sản phẩm"
               name="package_code"
               class="min-h-14"
             >
               <label for="">{{ state.package_code }}</label>
             </UFormGroup>
             <UFormGroup
-              label="Thời hạn"
+              label="Số tháng"
               name="period"
               class="min-h-14"
             >
@@ -444,14 +533,7 @@ const onEditRevenue = () => {
               name="created_at"
               class="min-h-14"
             >
-              <label for="">{{ state.created_at ? dayjs(orderDetailData.created_at).format('DD/MM/YYYY HH:mm:ss') : 'Chưa có thông tin' }}</label>
-            </UFormGroup>
-            <UFormGroup
-              label="Ngày thanh toán"
-              name="payment_date"
-              class="min-h-14"
-            >
-              <label for="">{{ state.payment_date ? dayjs(state.payment_date).format('DD/MM/YYYY HH:mm:ss') : 'Không có thông tin' }}</label>
+              <label for="">{{ state.created_at ? dayjs(orderDetailData.created_at).format('DD/MM/YYYY HH:mm:ss') : '-' }}</label>
             </UFormGroup>
           </div>
           <!--          <UFormGroup v-if="orderDetailData.status === OrderStatus.Cancel" label="Lý do hủy đơn" name="cancel_reason"> -->

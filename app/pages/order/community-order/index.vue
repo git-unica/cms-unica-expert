@@ -78,7 +78,7 @@ const listRolesCanProcessOrder = ref([])
 if (listRoles.value) {
   for (const role of listRoles.value) {
     if (role['name'] === ERole.Admin || role['name'] === ERole.Accountant || role['name'] === ERole.Sale) {
-      listRolesCanProcessOrder.value.push(role['_id'])
+      listRolesCanProcessOrder.value.push(role['name'])
     }
   }
 }
@@ -176,7 +176,7 @@ const redirectToOrderDetail = async (row: Order) => {
 
 // redirect to receipt
 const redirectToReceipt = async (row: Order) => {
-  await navigateTo({ path: '/order/community-order/' + row._id + '/receipt' })
+  await navigateTo({ path: '/order/community-order/' + row.order_code + '/receipt' })
 }
 
 // reset

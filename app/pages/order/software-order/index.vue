@@ -5,7 +5,8 @@ import numeral from 'numeral'
 import { format, sub } from 'date-fns'
 import type { FormSubmitEvent } from '#ui/types'
 import {OrderPaymentStatus, OrderStatus} from '~/enums/order-status.enum'
-import type { Order } from '~/types'
+import type {Order, Role} from '~/types'
+import {ERole} from "~/enums/role.enum";
 
 const defaultColumns = [
   {
@@ -375,9 +376,10 @@ const onAgreeChooseSale = async () => {
 
 // click button tìm kiếm
 const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const onSearch = async () => {
-  // await authStore.logout()
-  // navigateTo('/login')
+  await authStore.logout()
+  navigateTo('/login')
   if (selectedContent.value && textSearch.value) {
     query['filter[content_type]'] = selectedContent.value
     query['filter[keyword]'] = textSearch.value.trim()
@@ -387,7 +389,6 @@ const onSearch = async () => {
   }
 
   query['page'] = 1
-  console.log('query search', query)
   await refresh()
 }
 
@@ -410,6 +411,18 @@ const title = 'Đơn hàng phần mềm'
 
 useSeoMeta({
   title
+})
+
+// redirect to receipt
+const redirectToReceipt = async (row: Order) => {
+  await navigateTo({ path: '/order/software-order/' + row.order_code + '/receipt' })
+}
+
+// user info
+const listUserRoles = user?.value.roles
+console.log('user', user.value)
+const isCanProcessOrder = computed(() => {
+  return listUserRoles.some(item => item === ERole.Sale || item === ERole.Accountant || item === ERole.Admin)
 })
 </script>
 
@@ -640,8 +653,16 @@ useSeoMeta({
                       @click="redirectToOrderDetail(row)"
                     />
                   </UTooltip>
+                  <UTooltip text="Phiếu thu" v-if="isCanProcessOrder">
+                    <UButton
+                      :ui="{ rounded: 'rounded-full' }"
+                      icon="i-heroicons-clipboard-document-check-solid"
+                      color="orange"
+                      @click="redirectToReceipt(row)"
+                    />
+                  </UTooltip>
                   <UTooltip
-                    v-if="row.status === OrderStatus.Processing"
+                    v-if="row.status === OrderStatus.Processing && isCanProcessOrder"
                     text="Duyệt đơn"
                   >
                     <UButton
@@ -652,7 +673,7 @@ useSeoMeta({
                     />
                   </UTooltip>
 
-                  <UTooltip v-if="row.status !== OrderStatus.Cancel" text="Hủy đơn">
+                  <UTooltip v-if="row.status !== OrderStatus.Cancel && isCanProcessOrder" text="Hủy đơn">
                     <UButton
                       :ui="{ rounded: 'rounded-full' }"
                       color="orange"
