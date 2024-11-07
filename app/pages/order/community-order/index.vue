@@ -5,7 +5,7 @@ import { format, sub } from 'date-fns'
 import type { Order, Role } from '~/types'
 import { OrderPaymentStatus, OrderStatus } from '~/enums/order-status.enum'
 import { useAuthStore } from '~/stores/auth'
-import { ECommunityOrderPaymentStatus, ECommunityOrderStatus } from '~/enums/community-order.enum'
+import { ECommunityOrderPaymentStatus, ECommunityOrderStatus, ECommunityOrderType } from '~/enums/community-order.enum'
 import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
@@ -195,12 +195,6 @@ const onResetFilter = async () => {
   await refresh()
 }
 
-// user info
-const checkUserRole = computed(() => {
-  return user?.value.roles
-})
-
-const isCanProcessOrder = checkUserRole.value.some(item => listRolesCanProcessOrder.value.includes(item))
 const title = 'Đơn hàng cộng đồng'
 
 useSeoMeta({
@@ -325,8 +319,6 @@ const paymentStatusOptions = [{
 }]
 
 const onSearch = async () => {
-  // await authStore.logout()
-  // navigateTo('/login')
   if (selectedContent.value && textSearch.value) {
     query['filter[content_type]'] = selectedContent.value
     query['filter[keyword]'] = textSearch.value.trim()
@@ -369,6 +361,12 @@ watch(page, (newPage) => {
     refresh()
   }
 })
+
+// user info
+const listUserRoles = user?.value.roles
+const isCanProcessOrder = computed(() => {
+  return listUserRoles.some(item => item === ERole.Sale || item === ERole.Accountant || item === ERole.Admin)
+})
 </script>
 
 <template>
@@ -377,8 +375,7 @@ watch(page, (newPage) => {
       <UDashboardNavbar
         :badge="orders.meta.itemCount"
         title="Đơn hàng cộng đồng"
-      >
-      </UDashboardNavbar>
+      />
 
       <UDashboardToolbar>
         <template #left>
@@ -419,7 +416,10 @@ watch(page, (newPage) => {
 
                 <template #panel="{ close }">
                   <div class="flex items-center sm:divide-x divide-gray-200 dark:divide-gray-800">
-                    <DatePicker v-model="selectedDate" @close="close" />
+                    <DatePicker
+                      v-model="selectedDate"
+                      @close="close"
+                    />
                   </div>
                 </template>
               </UPopover>
@@ -522,7 +522,7 @@ watch(page, (newPage) => {
           </div>
         </template>
         <template #period-data="{ row }">
-          {{ row.period }} tháng
+          {{ row.type === ECommunityOrderType.JOIN_COMMUNITY_FEE ? row.period + ' tháng' : '-' }}
         </template>
         <template #total_amount-data="{ row }">
           <div class="text-right">{{ numeral(row.total_amount).format() }}</div>
@@ -531,7 +531,7 @@ watch(page, (newPage) => {
           {{ dayjs(row.created_at).format('DD/MM/YYYY HH:mm:ss') }}
         </template>
         <template #type-data="{ row }">
-          {{ row.type === 1 ? 'Tham gia cộng đồng trả phí' : (row.type === 2 ? 'Mua khóa học' : '') }}
+          {{ row.type === 1 ? 'Membership' : (row.type === 2 ? 'Mua khóa học' : '') }}
         </template>
         <template #status-data="{ row }">
           <span v-if="row.status === ECommunityOrderStatus.Processing" class="text-orange-500">Chờ xử lý</span>
@@ -595,7 +595,10 @@ watch(page, (newPage) => {
         <template #action-data="{ row }">
           <div class="flex gap-1 justify-center">
             <UPopover mode="hover">
-              <UButton color="white" trailing-icon="i-heroicons-ellipsis-vertical-16-solid" />
+              <UButton
+                color="white"
+                trailing-icon="i-heroicons-ellipsis-vertical-16-solid"
+              />
 
               <template #panel>
                 <div class="flex flex-col gap-2 p-4">
@@ -606,7 +609,10 @@ watch(page, (newPage) => {
                       @click="redirectToOrderDetail(row)"
                     />
                   </UTooltip>
-                  <UTooltip text="Phiếu thu" v-if="isCanProcessOrder">
+                  <UTooltip
+                    v-if="isCanProcessOrder"
+                    text="Phiếu thu"
+                  >
                     <UButton
                       :ui="{ rounded: 'rounded-full' }"
                       icon="i-heroicons-clipboard-document-check-solid"
@@ -614,7 +620,10 @@ watch(page, (newPage) => {
                       @click="redirectToReceipt(row)"
                     />
                   </UTooltip>
-                  <UTooltip text="Xóa đơn" v-if="isCanProcessOrder">
+                  <UTooltip
+                    v-if="isCanProcessOrder"
+                    text="Xóa đơn"
+                  >
                     <UButton
                       :ui="{ rounded: 'rounded-full' }"
                       color="red"
@@ -634,19 +643,41 @@ watch(page, (newPage) => {
         </template>
       </UTable>
       <!-- modal xóa đơn hàng -->
-      <UModal v-model="isOpenDeleteOrderModal" :ui="{ container: 'items-start sm:items-start' }" prevent-close>
+      <UModal
+        v-model="isOpenDeleteOrderModal"
+        :ui="{ container: 'items-start sm:items-start' }"
+        prevent-close
+      >
         <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
           <template #header>
             <div class="flex justify-between">
-              <h3 class="font-bold text-2xl">Xóa đơn hàng</h3>
-              <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="isOpenDeleteOrderModal = false" />
+              <h3 class="font-bold text-2xl">
+                Xóa đơn hàng
+              </h3>
+              <UButton
+                color="gray"
+                variant="ghost"
+                icon="i-heroicons-x-mark-20-solid"
+                class="-my-1"
+                @click="isOpenDeleteOrderModal = false"
+              />
             </div>
           </template>
           <p>Bạn có chắc chắn muốn xóa đơn hàng này không ?</p>
           <template #footer>
             <div class="flex gap-2 justify-end">
-              <UButton label="Thoát" color="red" @click="closeDeleteOrderModal" :ui="{ padding: { sm: 'px-5 py-2' } }"/>
-              <UButton label="Đồng ý" color="primary" @click="onDeleteOrder" :ui="{ padding: { sm: 'px-5 py-2' } }" />
+              <UButton
+                label="Thoát"
+                color="red"
+                :ui="{ padding: { sm: 'px-5 py-2' } }"
+                @click="closeDeleteOrderModal"
+              />
+              <UButton
+                label="Đồng ý"
+                color="primary"
+                :ui="{ padding: { sm: 'px-5 py-2' } }"
+                @click="onDeleteOrder"
+              />
             </div>
           </template>
         </UCard>
@@ -678,7 +709,9 @@ watch(page, (newPage) => {
         >
           <template #header>
             <div class="flex justify-between">
-              <h3 class="font-bold text-2xl">Gán sale xử lý đơn hàng</h3>
+              <h3 class="font-bold text-2xl">
+                Gán sale xử lý đơn hàng
+              </h3>
               <UButton
                 color="gray"
                 variant="ghost"
@@ -691,13 +724,13 @@ watch(page, (newPage) => {
           <div class="flex flex-col w-full gap-2">
             <p>Danh sách sales</p>
             <USelectMenu
+              v-model="selectedSale"
               clear-search-on-close
               class="w-full"
               placeholder="--- Chọn sale ---"
               :options="userData"
               searchable
               searchable-placeholder="Tìm kiếm sale..."
-              v-model="selectedSale"
               value-attribute="value"
               option-attribute="label"
             >

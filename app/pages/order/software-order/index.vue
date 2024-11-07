@@ -4,9 +4,9 @@ import dayjs from 'dayjs'
 import numeral from 'numeral'
 import { format, sub } from 'date-fns'
 import type { FormSubmitEvent } from '#ui/types'
-import {OrderPaymentStatus, OrderStatus} from '~/enums/order-status.enum'
-import type {Order, Role} from '~/types'
-import {ERole} from "~/enums/role.enum";
+import { OrderPaymentStatus, OrderStatus } from '~/enums/order-status.enum'
+import type { Order } from '~/types'
+import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
   {
@@ -103,7 +103,6 @@ const {
     errorMsg.value = response._data?.message ?? ''
   }
 })
-
 const isOpenDeleteOrderModal = ref(false)
 const selectedOrderId = ref()
 
@@ -378,8 +377,6 @@ const onAgreeChooseSale = async () => {
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 const onSearch = async () => {
-  await authStore.logout()
-  navigateTo('/login')
   if (selectedContent.value && textSearch.value) {
     query['filter[content_type]'] = selectedContent.value
     query['filter[keyword]'] = textSearch.value.trim()
@@ -424,6 +421,29 @@ console.log('user', user.value)
 const isCanProcessOrder = computed(() => {
   return listUserRoles.some(item => item === ERole.Sale || item === ERole.Accountant || item === ERole.Admin)
 })
+
+// xử lý format tiền
+numeral.locale('vn')
+if (!Object.keys(numeral.locales).includes('vn')) {
+  numeral.register('locale', 'vn', {
+    delimiters: {
+      thousands: '.',
+      decimal: ','
+    },
+    abbreviations: {
+      thousand: 'k',
+      million: 'm',
+      billion: 'b',
+      trillion: 't'
+    },
+    ordinal: function (number) {
+      return number.toString()
+    },
+    currency: {
+      symbol: ' VND'
+    }
+  })
+}
 </script>
 
 <template>
@@ -473,7 +493,10 @@ const isCanProcessOrder = computed(() => {
 
                 <template #panel="{ close }">
                   <div class="flex items-center sm:divide-x divide-gray-200 dark:divide-gray-800">
-                    <DatePicker v-model="selectedDate" @close="close" />
+                    <DatePicker
+                      v-model="selectedDate"
+                      @close="close"
+                    />
                   </div>
                 </template>
               </UPopover>
@@ -546,7 +569,9 @@ const isCanProcessOrder = computed(() => {
             icon="i-heroicons-adjustments-horizontal-solid"
             multiple
           >
-            <template #label> Hiển thị </template>
+            <template #label>
+              Hiển thị
+            </template>
           </USelectMenu>
         </template>
       </UDashboardToolbar>
@@ -573,19 +598,48 @@ const isCanProcessOrder = computed(() => {
             </UTooltip>
           </div>
         </template>
-        <template #period-data="{ row }"> {{ row.period }} tháng </template>
+        <template #period-data="{ row }">
+          {{ row.period }} tháng
+        </template>
         <template #total_amount-data="{ row }">
-          <div class="text-right">{{ numeral(row.total_amount).format() }}</div>
+          <div class="text-right">
+            {{ numeral(row.total_amount).format() }}
+          </div>
         </template>
         <template #created_at-data="{ row }">
           {{ dayjs(row.created_at).format("DD/MM/YYYY HH:mm:ss ") }}
         </template>
         <template #status-data="{ row }">
-          <span v-if="row.status === OrderStatus.Processing" class="text-orange-500">Chờ xử lý</span>
-          <span v-if="row.status === OrderStatus.Paid" class="text-green-500">Thành công</span>
-          <span v-if="row.status === OrderStatus.Cancel" class="text-slate-400">Đã hủy</span>
-          <span v-if="row.status === OrderStatus.Refund" class="text-teal-500">Hoàn tiền</span>
-          <span v-if="row.status === OrderStatus.Removed" class="text-red-500">Đã xóa</span>
+          <span
+            v-if="row.status === OrderStatus.Processing"
+            class="text-orange-500"
+          >
+            Chờ xử lý
+          </span>
+          <span
+            v-if="row.status === OrderStatus.Paid"
+            class="text-green-500"
+          >
+            Thành công
+          </span>
+          <span
+            v-if="row.status === OrderStatus.Cancel"
+            class="text-slate-400"
+          >
+            Đã hủy
+          </span>
+          <span
+            v-if="row.status === OrderStatus.Refund"
+            class="text-teal-500"
+          >
+            Hoàn tiền
+          </span>
+          <span
+            v-if="row.status === OrderStatus.Removed"
+            class="text-red-500"
+          >
+            Đã xóa
+          </span>
         </template>
         <template #ref-data="{ row }">
           {{
@@ -595,9 +649,24 @@ const isCanProcessOrder = computed(() => {
           }}
         </template>
         <template #payment-data="{ row }">
-          <span v-if="row.payment_status === OrderPaymentStatus.NotPay" class="text-orange-500">Chưa TT</span>
-          <span v-if="row.payment_status === OrderPaymentStatus.Paid" class="text-green-500">Đã TT</span>
-          <span v-if="row.payment_status === OrderPaymentStatus.Cancel" class="text-slate-400">Đã hủy</span>
+          <span
+            v-if="row.payment_status === OrderPaymentStatus.NotPay"
+            class="text-orange-500"
+          >
+            Chưa TT
+          </span>
+          <span
+            v-if="row.payment_status === OrderPaymentStatus.Paid"
+            class="text-green-500"
+          >
+            Đã TT
+          </span>
+          <span
+            v-if="row.payment_status === OrderPaymentStatus.Cancel"
+            class="text-slate-400"
+          >
+            Đã hủy
+          </span>
         </template>
         <template #note-data="{ row }">
           <span class="whitespace-nowrap overflow-hidden text-ellipsis block w-[200px]">{{ row.note }}</span>
@@ -642,7 +711,10 @@ const isCanProcessOrder = computed(() => {
         <template #action-data="{ row }">
           <div class="flex gap-1 justify-center">
             <UPopover mode="hover">
-              <UButton color="white" trailing-icon="i-heroicons-ellipsis-vertical-16-solid" />
+              <UButton
+                color="white"
+                trailing-icon="i-heroicons-ellipsis-vertical-16-solid"
+              />
 
               <template #panel>
                 <div class="flex flex-col gap-2 p-4">
@@ -653,7 +725,10 @@ const isCanProcessOrder = computed(() => {
                       @click="redirectToOrderDetail(row)"
                     />
                   </UTooltip>
-                  <UTooltip text="Phiếu thu" v-if="isCanProcessOrder">
+                  <UTooltip
+                    v-if="isCanProcessOrder"
+                    text="Phiếu thu"
+                  >
                     <UButton
                       :ui="{ rounded: 'rounded-full' }"
                       icon="i-heroicons-clipboard-document-check-solid"
@@ -673,7 +748,10 @@ const isCanProcessOrder = computed(() => {
                     />
                   </UTooltip>
 
-                  <UTooltip v-if="row.status !== OrderStatus.Cancel && isCanProcessOrder" text="Hủy đơn">
+                  <UTooltip
+                    v-if="row.status !== OrderStatus.Cancel && isCanProcessOrder"
+                    text="Hủy đơn"
+                  >
                     <UButton
                       :ui="{ rounded: 'rounded-full' }"
                       color="orange"
@@ -708,7 +786,9 @@ const isCanProcessOrder = computed(() => {
         >
           <template #header>
             <div class="flex justify-between">
-              <h3 class="font-bold text-2xl">Xóa đơn hàng</h3>
+              <h3 class="font-bold text-2xl">
+                Xóa đơn hàng
+              </h3>
               <UButton
                 color="gray"
                 variant="ghost"
@@ -794,12 +874,18 @@ const isCanProcessOrder = computed(() => {
             </UFormGroup>
 
             <div class="flex justify-end">
-              <UButton type="submit" :ui="{ padding: { sm: 'px-5 py-2' } }">
+              <UButton
+                type="submit"
+                :ui="{ padding: { sm: 'px-5 py-2' } }"
+              >
                 Đồng ý
               </UButton>
             </div>
           </UForm>
-          <template v-if="statusType === 'paid'" #footer>
+          <template
+            v-if="statusType === 'paid'"
+            #footer
+          >
             <div class="flex gap-2 justify-end">
               <UButton
                 label="Thoát"
@@ -832,7 +918,9 @@ const isCanProcessOrder = computed(() => {
         >
           <template #header>
             <div class="flex justify-between">
-              <h3 class="font-bold text-2xl">Gán sale xử lý đơn hàng</h3>
+              <h3 class="font-bold text-2xl">
+                Gán sale xử lý đơn hàng
+              </h3>
               <UButton
                 color="gray"
                 variant="ghost"
@@ -845,13 +933,13 @@ const isCanProcessOrder = computed(() => {
           <div class="flex flex-col w-full gap-2">
             <p>Danh sách sales</p>
             <USelectMenu
+              v-model="selectedSale"
               clear-search-on-close
               class="w-full"
               placeholder="--- Chọn sale ---"
               :options="userData"
               searchable
               searchable-placeholder="Tìm kiếm sale..."
-              v-model="selectedSale"
               value-attribute="value"
               option-attribute="label"
             >
@@ -874,8 +962,13 @@ const isCanProcessOrder = computed(() => {
       </UModal>
       <!---->
       <UDivider />
-      <div v-if="orders.meta.itemCount > 0" class="my-2 flex justify-end mr-6 items-center gap-2">
-        <p class="text-sm">Số đơn hàng: {{ orders.meta.itemCount }}</p>
+      <div
+        v-if="orders.meta.itemCount > 0"
+        class="my-2 flex justify-end mr-6 items-center gap-2"
+      >
+        <p class="text-sm">
+          Số đơn hàng: {{ orders.meta.itemCount }}
+        </p>
         <UPagination
           v-model="page"
           :page-count="orders.meta.take"
