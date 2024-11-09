@@ -6,7 +6,7 @@ import { EReceiptOrderType, EReceiptPay } from '~/enums/receipt-pay-list.enum'
 
 const route = useRoute()
 const orderCode = route?.params?.id
-const { data: orderDetail, refresh } = await useFetch(`/api/v1/community-order/${orderCode}`, {
+const { data: orderDetail, refresh } = await useFetch(`/api/v1/order/${orderCode}`, {
   headers: useRequestHeaders(['cookie']),
   default: () => ({
     meta: {
@@ -53,14 +53,14 @@ const schema = object({
 type Schema = InferType<typeof schema>
 const state = reactive({
   order_code: receiptDetail.value ? receiptDetail.value.order_code : orderDetailData.value.order_code,
-  money_order: receiptDetail.value ? receiptDetail.value.money_order : orderDetailData.value.total_amount,
+  money_order: receiptDetail.value ? receiptDetail.value.money_order : orderDetailData.value.origin_total_amount,
   revenue: receiptDetail.value ? receiptDetail.value.revenue : orderDetailData.value.revenue,
+  money_discount_from_old_package: receiptDetail.value ? receiptDetail.value.money_discount_from_old_package : orderDetailData.value.money_discount_from_old_package,
   pay_gate: receiptDetail.value ? receiptDetail.value.pay_gate : orderDetailData.value.pay_gate,
   pay_gate_fee: receiptDetail.value ? receiptDetail.value.pay_gate_fee : orderDetailData.value.pay_gate_fee,
+  discount_value: receiptDetail.value ? receiptDetail.value.discount_value : orderDetailData.value.discount_value,
   money_aff: receiptDetail.value ? receiptDetail.value.money_aff : 0,
   status: receiptDetail.value ? receiptDetail.value.status : undefined,
-  transaction_fees: receiptDetail.value ? receiptDetail.value.transaction_fees : orderDetailData.value.transaction_fees,
-  transaction_money: receiptDetail.value ? receiptDetail.value.transaction_money : orderDetailData.value.transaction_money,
   note: receiptDetail.value ? receiptDetail.value.note : undefined
 })
 
@@ -71,15 +71,15 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
     order_code: event.data.order_code,
     revenue: event.data.revenue,
     note: event.data.note,
-    order_type: EReceiptOrderType.COMMUNITY,
+    order_type: EReceiptOrderType.SOFTWARE,
     action_type: receiptDetail.value ? 'update' : 'create'
   }
-
   if (event.data.pay_gate === undefined) {
     Object.assign(dataPayload, {
       pay_gate: 'Bank_Transfer'
     })
   }
+
   try {
     await useFetch(`/api/v1/receipt-pay-list`, {
       method: 'POST',
@@ -99,11 +99,6 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
   }
 }
 
-// chỉnh sửa doanh thu
-const isEditRevenue = ref(false)
-const onEditRevenue = () => {
-  isEditRevenue.value = !isEditRevenue.value
-}
 const onApproveReceipt = async () => {
   try {
     await useFetch(`/api/v1/receipt-pay-list/approve/${receiptDetail.value._id}`, {
@@ -121,6 +116,35 @@ const onApproveReceipt = async () => {
   } catch (error) {
     console.error(error)
   }
+}
+
+// chỉnh sửa doanh thu
+const isEditRevenue = ref(false)
+const onEditRevenue = () => {
+  isEditRevenue.value = !isEditRevenue.value
+}
+
+// xử lý format tiền
+numeral.locale('vn')
+if (!Object.keys(numeral.locales).includes('vn')) {
+  numeral.register('locale', 'vn', {
+    delimiters: {
+      thousands: '.',
+      decimal: ','
+    },
+    abbreviations: {
+      thousand: 'k',
+      million: 'm',
+      billion: 'b',
+      trillion: 't'
+    },
+    ordinal: function (number) {
+      return number.toString()
+    },
+    currency: {
+      symbol: ' VND'
+    }
+  })
 }
 </script>
 
@@ -162,16 +186,16 @@ const onApproveReceipt = async () => {
           </div>
           <div class="flex flex-col gap-6">
             <UFormGroup
-              label="Phí giao dịch theo gói"
-              name="transaction_fees"
+              label="Giảm trừ gói cũ"
+              name="money_discount_from_old_package"
             >
-              <span>{{ state.transaction_fees + ' %' }}</span>
+              <span>{{ numeral(state.money_discount_from_old_package).format() }}</span>
             </UFormGroup>
             <UFormGroup
-              label="Tiền phí giao dịch"
-              name="transaction_money"
+              label="Giảm giá"
+              name="discount_value"
             >
-              <span>{{ numeral(state.transaction_money).format() }}</span>
+              <span>{{ state.discount_value + ' %' }} (Giảm: {{ state.money_order * state.discount_value/100 }})</span>
             </UFormGroup>
           </div>
           <div class="flex flex-col gap-6">
@@ -226,7 +250,6 @@ const onApproveReceipt = async () => {
             </UFormGroup>
           </div>
         </div>
-
         <UFormGroup
           label="Ghi chú"
           name="note"
@@ -237,7 +260,6 @@ const onApproveReceipt = async () => {
             placeholder="Ghi chú ..."
           />
         </UFormGroup>
-
         <div class="flex gap-2 px-4 py-4">
           <UButton
             v-if="receiptDetail === null || (receiptDetail.status !== EReceiptPay.Approved)"

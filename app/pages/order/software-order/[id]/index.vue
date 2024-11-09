@@ -357,7 +357,7 @@ if (!numeral.locales.hasOwnProperty('vn')) {
               name="pay_gate"
               class="min-h-14"
             >
-              <label for="">{{ state.pay_gate ? (state.pay_gate === 'Bank_Tranfer' ? 'Chuyển khoản ngân hàng' : state.pay_gate ) : '-' }}</label>
+              <label for="">{{ state.pay_gate ? (state.pay_gate === 'Bank_Tranfer' ? 'Chuyển khoản ngân hàng' : state.pay_gate) : '-' }}</label>
             </UFormGroup>
             <UFormGroup
               label="Phí cổng thanh toán"
