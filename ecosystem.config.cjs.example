@@ -1,0 +1,11 @@
+module.exports = {
+  apps: [
+    {
+      name: 'CMS Unica Expert',
+      port: '3002',
+      exec_mode: 'cluster',
+      instances: '8', // tuỳ số CPU mỗi máy chủ
+      script: './current/server/index.mjs' // theo đường dẫn sau khi chạy build.sh
+    }
+  ]
+}
