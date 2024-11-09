@@ -18,7 +18,7 @@ cp -r .output "${folder}"
 ln -snf "${folder}" current
 
 # Cleanup old releases
-for old in `ls -d release-* | grep -v ${folder} | head -n-5`; do
+for old in $(ls -dt release-* | tail -n +6); do
     rm -rf "${old}"/
 done
 
