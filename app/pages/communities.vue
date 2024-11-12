@@ -331,6 +331,15 @@ defineShortcuts({
         <template #[`status-data`]="{ row }">
           {{ LabelCommunityStatus[row.status] }}
         </template>
+        <template #[`package_code-data`]="{ row }">
+          <p>{{ row.package_code }}</p>
+          <p
+            v-if="row.package_expires"
+            :class="{ 'text-red-500 font-bold': $dayjs(row.package_expires).diff($dayjs(), 'month') < 1 }"
+          >
+            {{ format(row.package_expires, 'dd/MM/yyyy') }}
+          </p>
+        </template>
         <template #[`type-data`]="{ row }">
           <USelect
             v-model="row.type"
