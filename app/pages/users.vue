@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { format } from 'date-fns'
 import type { AffiliateLevel, IResponsePagination, User } from '~/types'
 
 const defaultColumns = [
@@ -9,23 +10,23 @@ const defaultColumns = [
     hidden: true
   }, {
     key: 'full_name',
-    label: 'Họ tên',
-    sortable: true
+    label: 'Họ tên'
   }, {
     key: 'email',
-    label: 'Email',
+    label: 'Email'
+  },
+  {
+    key: 'created_at',
+    label: 'Ngày tham gia',
     sortable: true
   },
   {
     key: 'phone',
     label: 'Số điện thoại'
-  },
-  {
-    key: 'affiliate_level',
-    label: 'Cấp độ Affiliate'
   }
 ]
 
+const config = useRuntimeConfig()
 const toast = useToast()
 const q = ref()
 const keyword = refDebounced(q, 500)
@@ -185,22 +186,20 @@ defineShortcuts({
               size="xs"
             />
 
-            <span class="text-gray-900 dark:text-white font-medium">{{ row.full_name }}</span>
+            <NuxtLink
+              :to="`${config.public.frontendUrl}/@${row.username ?? row._id}`"
+              class="text-gray-900 dark:text-white font-medium"
+            >{{ row.full_name }}
+            </NuxtLink>
           </div>
+        </template>
+        <template #[`created_at-data`]="{ row }">
+          {{ format(row.created_at, 'dd/MM/yyyy') }}
         </template>
         <template #empty-state>
           <div class="flex flex-col items-center justify-center py-6 gap-3">
             <span class="italic text-sm">{{ errorMsg ?? 'Không có thành viên' }}</span>
           </div>
-        </template>
-        <template #[`affiliate_level-data`]="{ row }">
-          <USelect
-            v-model="row.affiliate_level_id"
-            :options="affLevelOptions"
-            option-attribute="name"
-            placeholder="Chọn cấp"
-            @change="onUpdateAffLevel(row, $event)"
-          />
         </template>
       </UTable>
       <UDivider />
