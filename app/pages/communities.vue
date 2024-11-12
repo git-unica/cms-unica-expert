@@ -7,6 +7,7 @@ import type { ECommunityType } from '~/enums/community-type.enum'
 import { LabelCommunityType } from '~/enums/community-type.enum'
 import type { Community, IResponsePagination } from '~/types'
 import { ERole } from '~/enums/role.enum'
+import { LabelCommunityPackageCode } from '~/enums/community-package-code.enum'
 
 const defaultColumns = [
   {
@@ -64,11 +65,13 @@ const createdAt = ref({
 })
 const filterStatus = ref()
 const filterType = ref()
+const filterPackageCode = ref('all')
 const filterCreatedAt = computed(() => [createdAt.value.start.toISOString(), createdAt.value.end.toISOString()])
 const query = reactive({
   'filter[keyword]': keyword,
   'filter[status]': filterStatus,
   'filter[type]': filterType,
+  'filter[package_code]': filterPackageCode,
   'filter[created_at][between]': filterCreatedAt,
   'w[]': 'owner',
   page
@@ -89,6 +92,12 @@ const typeOptions = computed(() =>
   Object.keys(LabelCommunityType).map(key => ({
     value: key,
     name: LabelCommunityType[key]
+  }))
+)
+const packageCodeOptions = computed(() =>
+  Object.keys(LabelCommunityPackageCode).map(key => ({
+    value: key,
+    name: LabelCommunityPackageCode[key]
   }))
 )
 
@@ -232,6 +241,13 @@ defineShortcuts({
             class="hidden lg:block"
             option-attribute="name"
             placeholder="Kiểu"
+          />
+          <USelect
+            v-model="filterPackageCode"
+            :options="packageCodeOptions"
+            class="hidden lg:block"
+            option-attribute="name"
+            placeholder="Gói"
           />
           <div class="flex justify-center items-center gap-2">
             <UPopover :popper="{ placement: 'bottom-start' }">
