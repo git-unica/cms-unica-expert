@@ -1,9 +1,12 @@
 <script lang="ts" setup>
-import {LabelCommunityStatus} from '~/enums/community-status.enum'
-import type {ECommunityType} from '~/enums/community-type.enum'
-import {LabelCommunityType} from '~/enums/community-type.enum'
-import type {Community, IResponsePagination} from '~/types'
-import {ERole} from "~/enums/role.enum";
+import { format } from 'date-fns'
+import dayjs from 'dayjs'
+import { vi } from 'date-fns/locale/vi'
+import { LabelCommunityStatus } from '~/enums/community-status.enum'
+import type { ECommunityType } from '~/enums/community-type.enum'
+import { LabelCommunityType } from '~/enums/community-type.enum'
+import type { Community, IResponsePagination } from '~/types'
+import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
   {
@@ -14,8 +17,7 @@ const defaultColumns = [
   },
   {
     key: 'name',
-    label: 'Cộng đồng',
-    sortable: true
+    label: 'Cộng đồng'
   },
   {
     key: 'status',
@@ -34,6 +36,11 @@ const defaultColumns = [
     label: 'Owner'
   },
   {
+    key: 'total_member',
+    label: 'Thành viên',
+    sortable: true
+  },
+  {
     key: 'created_at',
     label: 'Ngày tạo'
   },
@@ -49,20 +56,25 @@ const q = ref()
 const keyword = refDebounced(q, 500)
 const selected = ref<Community[]>([])
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
-const sortTable = ref({column: '_id', direction: 'desc'} as const)
+const sortTable = ref({ column: '_id', direction: 'desc' } as const)
 const input = ref<{ input: HTMLInputElement }>()
 const page = ref(1)
+const createdAt = ref({
+  start: dayjs().startOf('month').toDate(), end: new Date()
+})
 const filterStatus = ref()
 const filterType = ref()
+const filterCreatedAt = computed(() => [createdAt.value.start.toISOString(), createdAt.value.end.toISOString()])
 const query = reactive({
   'filter[keyword]': keyword,
   'filter[status]': filterStatus,
   'filter[type]': filterType,
+  'filter[created_at][between]': filterCreatedAt,
   'w[]': 'owner',
   page
 })
 const authStore = useAuthStore()
-const {user} = storeToRefs(authStore)
+const { user } = storeToRefs(authStore)
 
 const columns = computed(() =>
   defaultColumns.filter(column => selectedColumns.value.includes(column))
@@ -105,8 +117,7 @@ const {
       hasNextPage: false
     },
     data: []
-  }),
-  server: false
+  })
 })
 
 function onSelect(row: Community) {
@@ -128,12 +139,12 @@ const onUpdateType = async (
     body: {
       type
     },
-    onResponse({response}) {
+    onResponse({ response }) {
       if (response.ok) {
         refresh()
-        toast.add({title: 'Cập nhật kiểu thành công', color: 'green'})
+        toast.add({ title: 'Cập nhật kiểu thành công', color: 'green' })
       } else {
-        toast.add({title: 'Có lỗi khi thao tác', color: 'red'})
+        toast.add({ title: 'Có lỗi khi thao tác', color: 'red' })
       }
     }
   })
@@ -163,15 +174,15 @@ const deleteCommunity = async () => {
 
     if (response.statusCode === 200) {
       await refresh()
-      toast.add({title: response.message, color: 'green'})
+      toast.add({ title: response.message, color: 'green' })
     } else if (response.statusCode === 500) {
-      toast.add({title: 'Không thể xóa cộng đồng', color: 'red'})
+      toast.add({ title: 'Không thể xóa cộng đồng', color: 'red' })
     } else {
-      toast.add({title: 'Đã xảy ra lỗi', color: 'red'})
+      toast.add({ title: 'Đã xảy ra lỗi', color: 'red' })
     }
   } catch (error) {
     console.error('Error deleting community:', error)
-    toast.add({title: 'Có lỗi xảy ra trong quá trình xóa', color: 'red'})
+    toast.add({ title: 'Có lỗi xảy ra trong quá trình xóa', color: 'red' })
   }
 }
 
@@ -200,7 +211,7 @@ defineShortcuts({
             @keydown.esc="$event.target.blur()"
           >
             <template #trailing>
-              <UKbd value="/"/>
+              <UKbd value="/" />
             </template>
           </UInput>
         </template>
@@ -222,6 +233,30 @@ defineShortcuts({
             option-attribute="name"
             placeholder="Kiểu"
           />
+          <div class="flex justify-center items-center gap-2">
+            <UPopover :popper="{ placement: 'bottom-start' }">
+              <UButton
+                :ui="{
+                  variant: {
+                    solid: 'bg-white text-gray-900 border border-solid border-[#ccc] hover:bg-[#ccc]'
+                  }
+                }"
+                icon="i-heroicons-calendar-days-20-solid"
+              >
+                {{ format(createdAt.start, 'd MMM, yyy', { locale: vi }) }} -
+                {{ format(createdAt.end, 'd MMM, yyy', { locale: vi }) }}
+              </UButton>
+
+              <template #panel="{ close }">
+                <div class="flex items-center sm:divide-x divide-gray-200 dark:divide-gray-800">
+                  <DatePicker
+                    v-model="createdAt"
+                    @close="close"
+                  />
+                </div>
+              </template>
+            </UPopover>
+          </div>
         </template>
         <template #right>
           <USelectMenu
@@ -347,7 +382,7 @@ defineShortcuts({
           </div>
         </template>
       </UTable>
-      <UDivider/>
+      <UDivider />
       <div class="my-2 mx-auto">
         <UPagination
           v-model="page"
