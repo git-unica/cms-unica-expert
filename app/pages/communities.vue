@@ -1,87 +1,99 @@
 <script lang="ts" setup>
-import { LabelCommunityStatus } from "~/enums/community-status.enum";
-import type { ECommunityType } from "~/enums/community-type.enum";
-import { LabelCommunityType } from "~/enums/community-type.enum";
-import type { Community, IResponsePagination } from "~/types";
+import {LabelCommunityStatus} from '~/enums/community-status.enum'
+import type {ECommunityType} from '~/enums/community-type.enum'
+import {LabelCommunityType} from '~/enums/community-type.enum'
+import type {Community, IResponsePagination} from '~/types'
+import {ERole} from "~/enums/role.enum";
 
 const defaultColumns = [
   {
-    key: "_id",
-    label: "#",
+    key: '_id',
+    label: '#',
     sortable: true,
-    hidden: true,
+    hidden: true
   },
   {
-    key: "name",
-    label: "Cộng đồng",
-    sortable: true,
+    key: 'name',
+    label: 'Cộng đồng',
+    sortable: true
   },
   {
-    key: "status",
-    label: "Trạng thái",
+    key: 'status',
+    label: 'Trạng thái'
   },
   {
-    key: "type",
-    label: "Kiểu",
+    key: 'type',
+    label: 'Kiểu'
   },
   {
-    key: "created_at",
-    label: "Ngày tạo",
+    key: 'package_code',
+    label: 'Gói'
   },
   {
-    key: "action",
-    label: "Hành động",
+    key: 'owner',
+    label: 'Owner'
   },
-];
+  {
+    key: 'created_at',
+    label: 'Ngày tạo'
+  },
+  {
+    key: 'action',
+    label: 'Hành động'
+  }
+]
 
-const toast = useToast();
-const config = useRuntimeConfig();
-const q = ref();
-const keyword = refDebounced(q, 500);
-const selected = ref<Community[]>([]);
-const selectedColumns = ref(defaultColumns.filter((c) => !c.hidden));
-const sortTable = ref({ column: "_id", direction: "desc" } as const);
-const input = ref<{ input: HTMLInputElement }>();
-const page = ref(1);
-const filterStatus = ref();
-const filterType = ref();
+const toast = useToast()
+const config = useRuntimeConfig()
+const q = ref()
+const keyword = refDebounced(q, 500)
+const selected = ref<Community[]>([])
+const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
+const sortTable = ref({column: '_id', direction: 'desc'} as const)
+const input = ref<{ input: HTMLInputElement }>()
+const page = ref(1)
+const filterStatus = ref()
+const filterType = ref()
 const query = reactive({
-  "filter[keyword]": keyword,
-  "filter[status]": filterStatus,
-  "filter[type]": filterType,
-  page,
-});
+  'filter[keyword]': keyword,
+  'filter[status]': filterStatus,
+  'filter[type]': filterType,
+  'w[]': 'owner',
+  page
+})
+const authStore = useAuthStore()
+const {user} = storeToRefs(authStore)
 
 const columns = computed(() =>
-  defaultColumns.filter((column) => selectedColumns.value.includes(column))
-);
+  defaultColumns.filter(column => selectedColumns.value.includes(column))
+)
 const statusOptions = computed(() =>
-  Object.keys(LabelCommunityStatus).map((key) => ({
+  Object.keys(LabelCommunityStatus).map(key => ({
     value: key,
-    name: LabelCommunityStatus[key],
+    name: LabelCommunityStatus[key]
   }))
-);
+)
 const typeOptions = computed(() =>
-  Object.keys(LabelCommunityType).map((key) => ({
+  Object.keys(LabelCommunityType).map(key => ({
     value: key,
-    name: LabelCommunityType[key],
+    name: LabelCommunityType[key]
   }))
-);
+)
 
 watch(sortTable, (newValue) => {
   for (const key in query) {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-    if (/^sort\[/.test(key)) delete query[key];
+    if (/^sort\[/.test(key)) delete query[key]
   }
 
-  query[`sort[${newValue.column}]`] = newValue.direction === "desc" ? -1 : 1;
-});
+  query[`sort[${newValue.column}]`] = newValue.direction === 'desc' ? -1 : 1
+})
 
 const {
   data: communities,
   status,
-  refresh,
-} = await useFetch<IResponsePagination<Community>>("/api/v1/community", {
+  refresh
+} = await useFetch<IResponsePagination<Community>>('/api/v1/community', {
   query,
   default: () => ({
     meta: {
@@ -90,18 +102,19 @@ const {
       itemCount: 0,
       pageCount: 0,
       hasPreviousPage: false,
-      hasNextPage: false,
+      hasNextPage: false
     },
-    data: [],
+    data: []
   }),
-});
+  server: false
+})
 
 function onSelect(row: Community) {
-  const index = selected.value.findIndex((item) => item._id === row._id);
+  const index = selected.value.findIndex(item => item._id === row._id)
   if (index === -1) {
-    selected.value.push(row);
+    selected.value.push(row)
   } else {
-    selected.value.splice(index, 1);
+    selected.value.splice(index, 1)
   }
 }
 
@@ -110,67 +123,72 @@ const onUpdateType = async (
   type: (typeof ECommunityType)[keyof typeof ECommunityType]
 ) => {
   await $fetch(`/api/v1/community/${row._id}`, {
-    method: "PATCH",
-    headers: useRequestHeaders(["cookie"]),
+    method: 'PATCH',
+    headers: useRequestHeaders(['cookie']),
     body: {
-      type,
+      type
     },
-    onResponse({ response }) {
+    onResponse({response}) {
       if (response.ok) {
-        refresh();
-        toast.add({ title: "Cập nhật kiểu thành công", color: "green" });
+        refresh()
+        toast.add({title: 'Cập nhật kiểu thành công', color: 'green'})
       } else {
-        toast.add({ title: "Có lỗi khi thao tác", color: "red" });
+        toast.add({title: 'Có lỗi khi thao tác', color: 'red'})
       }
-    },
-  });
-};
-interface DeleteCommunityResponse {
-  message: string;
-  statusCode: number;
-  data: Record<string, unknown>;
+    }
+  })
 }
-const communitySelected = ref<Community | null>(null);
-const isOpen = ref(false);
+
+interface DeleteCommunityResponse {
+  message: string
+  statusCode: number
+  data: Record<string, unknown>
+}
+
+const communitySelected = ref<Community | null>(null)
+const isOpen = ref(false)
 const openModal = (row: Community) => {
-  communitySelected.value = row;
-  isOpen.value = true;
-};
+  communitySelected.value = row
+  isOpen.value = true
+}
 const deleteCommunity = async () => {
   try {
-    const response: DeleteCommunityResponse = await $fetch(
+    const response = await $fetch<DeleteCommunityResponse>(
       `/api/v1/community/${communitySelected.value._id}`,
       {
-        method: "DELETE",
-        headers: useRequestHeaders(["cookie"]),
+        method: 'DELETE',
+        headers: useRequestHeaders(['cookie'])
       }
-    );
+    )
 
     if (response.statusCode === 200) {
-      await refresh();
-      toast.add({ title: response.message, color: "green" });
+      await refresh()
+      toast.add({title: response.message, color: 'green'})
     } else if (response.statusCode === 500) {
-      toast.add({ title: "Không thể xóa cộng đồng", color: "red" });
+      toast.add({title: 'Không thể xóa cộng đồng', color: 'red'})
     } else {
-      toast.add({ title: "Đã xảy ra lỗi", color: "red" });
+      toast.add({title: 'Đã xảy ra lỗi', color: 'red'})
     }
   } catch (error) {
-    console.error("Error deleting community:", error);
-    toast.add({ title: "Có lỗi xảy ra trong quá trình xóa", color: "red" });
+    console.error('Error deleting community:', error)
+    toast.add({title: 'Có lỗi xảy ra trong quá trình xóa', color: 'red'})
   }
-};
+}
 
 defineShortcuts({
-  "/": () => {
-    input.value?.input?.focus();
-  },
-});
+  '/': () => {
+    input.value?.input?.focus()
+  }
+})
 </script>
 
 <template>
   <UDashboardPage>
     <UDashboardPanel grow>
-      <UDashboardNavbar :badge="communities.meta.itemCount" title="Cộng đồng">
+      <UDashboardNavbar
+        :badge="communities.meta.itemCount"
+        title="Cộng đồng"
+      >
         <template #right>
           <UInput
             ref="input"
@@ -182,7 +200,7 @@ defineShortcuts({
             @keydown.esc="$event.target.blur()"
           >
             <template #trailing>
-              <UKbd value="/" />
+              <UKbd value="/"/>
             </template>
           </UInput>
         </template>
@@ -213,7 +231,9 @@ defineShortcuts({
             icon="i-heroicons-adjustments-horizontal-solid"
             multiple
           >
-            <template #label> Hiển thị </template>
+            <template #label>
+              Hiển thị
+            </template>
           </USelectMenu>
         </template>
       </UDashboardToolbar>
@@ -229,13 +249,32 @@ defineShortcuts({
         sort-mode="manual"
         @select="onSelect"
       >
+        <template #[`owner-data`]="{ row }">
+          <p>{{ row.owner.full_name }}</p>
+          <p>
+            <a
+              :href="`tel:${row.owner.phone}`"
+              class="text-blue-500"
+            >{{ row.owner.phone }}</a>
+          </p>
+          <p>
+            <a
+              :href="`mailto:${row.owner.email}`"
+              class="text-blue-500"
+            >{{ row.owner.email }}</a>
+          </p>
+        </template>
         <template #[`name-data`]="{ row }">
           <div class="flex items-center gap-3">
-            <UAvatar :alt="row.name" :src="row.icon" size="xs" />
+            <UAvatar
+              :alt="row.name"
+              :src="row.icon"
+              size="xs"
+            />
 
-            <span class="text-gray-900 dark:text-white font-medium">{{
-              row.name
-            }}</span>
+            <span class="text-gray-900 dark:text-white font-medium">
+              {{ row.name }}
+            </span>
           </div>
         </template>
         <template #[`status-data`]="{ row }">
@@ -257,16 +296,16 @@ defineShortcuts({
           <div class="flex gap-1">
             <UTooltip text="Truy cập cộng đồng">
               <UButton
-                :to="`${config.public.frontendUrl}/community/@${
-                  row.short_name ?? row._id
-                }`"
+                :to="`${config.public.frontendUrl}/${row.short_name ?? row._id}`"
                 :ui="{ rounded: 'rounded-full' }"
                 icon="i-heroicons-link-solid"
                 target="_blank"
               />
             </UTooltip>
-
-            <UTooltip text="Xóa cộng đồng">
+            <UTooltip
+              v-if="user.roles.includes(ERole.Admin)"
+              text="Xóa cộng đồng"
+            >
               <UButton
                 :ui="{ rounded: 'rounded-full' }"
                 color="red"
@@ -278,7 +317,7 @@ defineShortcuts({
               <UCard
                 :ui="{
                   ring: '',
-                  divide: 'divide-y divide-gray-100 dark:divide-gray-800',
+                  divide: 'divide-y divide-gray-100 dark:divide-gray-800'
                 }"
               >
                 <div class="text-center">
@@ -289,10 +328,16 @@ defineShortcuts({
 
                 <template #footer>
                   <div class="flex justify-end space-x-2">
-                    <UButton color="red" @click="deleteCommunity()">
+                    <UButton
+                      color="red"
+                      @click="deleteCommunity()"
+                    >
                       Có
                     </UButton>
-                    <UButton color="gray" @click="isOpen = false">
+                    <UButton
+                      color="gray"
+                      @click="isOpen = false"
+                    >
                       Không
                     </UButton>
                   </div>
@@ -302,7 +347,7 @@ defineShortcuts({
           </div>
         </template>
       </UTable>
-      <UDivider />
+      <UDivider/>
       <div class="my-2 mx-auto">
         <UPagination
           v-model="page"

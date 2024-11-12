@@ -13,7 +13,7 @@ export interface User {
   phone: string
   bio?: string
   ref?: string
-  roles?: string[]
+  roles?: ((typeof ERole)[keyof typeof ERole])[]
   affiliate_level_id?: string
   created_at: string
   updated_at: string
