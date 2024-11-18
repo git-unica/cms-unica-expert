@@ -27,7 +27,6 @@ const defaultColumns = [
 ]
 
 const config = useRuntimeConfig()
-const toast = useToast()
 const q = ref()
 const keyword = refDebounced(q, 500)
 const selected = ref<User[]>([])
@@ -54,7 +53,7 @@ watch(sortTable, (newValue) => {
   query[`sort[${newValue.column}]`] = newValue.direction === 'desc' ? -1 : 1
 })
 
-const { data: users, status, refresh } = await useFetch<IResponsePagination<User>>('/api/v1/users', {
+const { data: users, status } = await useFetch<IResponsePagination<User>>('/api/v1/users', {
   query,
   headers: useRequestHeaders(['cookie']),
   lazy: true,
@@ -90,24 +89,6 @@ function onSelect(row: User) {
   } else {
     selected.value.splice(index, 1)
   }
-}
-
-const onUpdateAffLevel = async (row: AffiliateLevel, level_id: string) => {
-  await $fetch(`/api/v1/users/${row._id}/affiliate-level`, {
-    method: 'PATCH',
-    headers: useRequestHeaders(['cookie']),
-    body: {
-      level_id
-    },
-    onResponse({ response }) {
-      if (response.ok) {
-        refresh()
-        toast.add({ title: 'Cập nhật cấp độ thành công', color: 'green' })
-      } else {
-        toast.add({ title: 'Có lỗi khi thao tác', color: 'red' })
-      }
-    }
-  })
 }
 
 defineShortcuts({

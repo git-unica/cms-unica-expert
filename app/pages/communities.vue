@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { format } from 'date-fns'
 import dayjs from 'dayjs'
-import { vi } from 'date-fns/locale/vi'
+import vi from 'date-fns/locale/vi'
 import { LabelCommunityStatus } from '~/enums/community-status.enum'
 import type { ECommunityType } from '~/enums/community-type.enum'
 import { LabelCommunityType } from '~/enums/community-type.enum'
-import type { Community, IResponsePagination } from '~/types'
+import type { Community, DataNotifySSE, IResponsePagination } from '~/types'
 import { ERole } from '~/enums/role.enum'
 import { LabelCommunityPackageCode } from '~/enums/community-package-code.enum'
 
@@ -51,6 +51,7 @@ const defaultColumns = [
   }
 ]
 
+const sse = useState<string>('sse')
 const toast = useToast()
 const config = useRuntimeConfig()
 const q = ref()
@@ -61,7 +62,7 @@ const sortTable = ref({ column: '_id', direction: 'desc' } as const)
 const input = ref<{ input: HTMLInputElement }>()
 const page = ref(1)
 const createdAt = ref({
-  start: dayjs().startOf('month').toDate(), end: new Date()
+  start: dayjs().startOf('month').startOf('day').toDate(), end: dayjs().endOf('day').toDate()
 })
 const filterStatus = ref()
 const filterType = ref()
@@ -108,6 +109,14 @@ watch(sortTable, (newValue) => {
   }
 
   query[`sort[${newValue.column}]`] = newValue.direction === 'desc' ? -1 : 1
+})
+
+watch(sse, (newValue) => {
+  const objSSE = JSON.parse(newValue) as DataNotifySSE
+  if (objSSE.type === 'export_community' && objSSE.path) {
+    toast.clear()
+    window.open(`${config.public.apiUrl}/${objSSE.path}`, '_blank')
+  }
 })
 
 const {
@@ -195,6 +204,24 @@ const deleteCommunity = async () => {
   }
 }
 
+const exportExcel = async () => {
+  try {
+    await $fetch(`/api/v1/community/export`, {
+      headers: useRequestHeaders(['cookie']),
+      query,
+      onResponse({ response }) {
+        if (response.ok) {
+          if (response._data.path) window.open(`${config.public.apiUrl}/${response._data.path}`, '_blank')
+          else toast.add({ title: response._data.message })
+        }
+      }
+    })
+  } catch (error) {
+    console.log(error)
+    toast.add({ title: 'Có lỗi khi xử lý export', color: 'red' })
+  }
+}
+
 defineShortcuts({
   '/': () => {
     input.value?.input?.focus()
@@ -273,6 +300,9 @@ defineShortcuts({
               </template>
             </UPopover>
           </div>
+          <UButton @click="exportExcel">
+            Export
+          </UButton>
         </template>
         <template #right>
           <USelectMenu

@@ -3,6 +3,7 @@ import type { ECommunityStatus } from '~/enums/community-status.enum'
 import type { ECommunityType } from '~/enums/community-type.enum'
 import type { EStatusPost } from '~/enums/status-post.enum'
 import type { OrderStatus } from '~/enums/order-status.enum'
+import type { SSEType } from '~/enums/sse-type.enum'
 
 export interface User {
   _id: string
@@ -156,4 +157,10 @@ export interface Order {
   created_at: Date
   status: (typeof OrderStatus)[keyof typeof OrderStatus]
   order_code: number
+}
+
+export interface DataNotifySSE {
+  type: SSEType
+
+  [key: string]: unknown
 }
