@@ -80,7 +80,8 @@ const state = reactive({
   ref: orderDetailData.value.ref,
   sale: orderDetailData.value.sale,
   pay_gate: orderDetailData.value.pay_gate,
-  pay_gate_fee: orderDetailData.value.pay_gate_fee
+  pay_gate_fee: orderDetailData.value.pay_gate_fee,
+  actual_amount: orderDetailData.value.pay_gate_fee > 0 ? orderDetailData.value.total_amount - orderDetailData.value.pay_gate_fee : orderDetailData.value.total_amount
 })
 console.log('state', state)
 watchEffect(() => {
@@ -344,6 +345,13 @@ if (!numeral.locales.hasOwnProperty('vn')) {
               class="min-h-14"
             >
               <label for="">{{ state.origin_total_amount ? numeral(state.origin_total_amount).format() : 0 }}</label>
+            </UFormGroup>
+            <UFormGroup
+              label="Thực thu"
+              name="actual_amount"
+              class="min-h-14"
+            >
+              <label for="">{{ state.actual_amount ? numeral(state.actual_amount).format() : 0 }}</label>
             </UFormGroup>
             <UFormGroup
               label="Giảm trừ gói cũ"
