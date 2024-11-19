@@ -6,6 +6,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (isLogin.value) {
     await authStore.getUserInfo()
   } else {
-    navigateTo('/login')
+    return navigateTo('/login')
   }
 })

@@ -5,7 +5,7 @@ import vi from 'date-fns/locale/vi'
 import { LabelCommunityStatus } from '~/enums/community-status.enum'
 import type { ECommunityType } from '~/enums/community-type.enum'
 import { LabelCommunityType } from '~/enums/community-type.enum'
-import type { Community, DataNotifySSE, IResponsePagination } from '~/types'
+import type { Community, IResponsePagination } from '~/types'
 import { ERole } from '~/enums/role.enum'
 import { LabelCommunityPackageCode } from '~/enums/community-package-code.enum'
 
@@ -51,7 +51,6 @@ const defaultColumns = [
   }
 ]
 
-const sse = useState<string>('sse')
 const toast = useToast()
 const config = useRuntimeConfig()
 const q = ref()
@@ -109,14 +108,6 @@ watch(sortTable, (newValue) => {
   }
 
   query[`sort[${newValue.column}]`] = newValue.direction === 'desc' ? -1 : 1
-})
-
-watch(sse, (newValue) => {
-  const objSSE = JSON.parse(newValue) as DataNotifySSE
-  if (objSSE.type === 'export_community' && objSSE.path) {
-    toast.clear()
-    window.open(`${config.public.apiUrl}/${objSSE.path}`, '_blank')
-  }
 })
 
 const {
@@ -219,6 +210,30 @@ const exportExcel = async () => {
   } catch (error) {
     console.log(error)
     toast.add({ title: 'Có lỗi khi xử lý export', color: 'red' })
+  }
+}
+
+const connectCommunity = async (community: Community) => {
+  const name = community.short_name ?? community._id
+  if (user.value.roles?.some(role => [ERole.Admin, ERole.Sale, ERole.Support].includes(role))) {
+    try {
+      await $fetch<{ access_token: string }>('/api/v1/auth/create-token-owner', {
+        method: 'POST',
+        headers: useRequestHeaders(['cookie']),
+        body: {
+          community_id: community._id
+        },
+        onResponse({ response }) {
+          if (response.ok) {
+            window.open(`${config.public.frontendUrl}?token=${response._data.access_token}`, '_blank')
+          }
+        }
+      })
+    } catch (error) {
+      console.log(error)
+    }
+  } else {
+    window.open(`${config.public.frontendUrl}/${name}`, '_blank')
   }
 }
 
@@ -386,14 +401,14 @@ defineShortcuts({
           <div class="flex gap-1">
             <UTooltip text="Truy cập cộng đồng">
               <UButton
-                :to="`${config.public.frontendUrl}/${row.short_name ?? row._id}`"
                 :ui="{ rounded: 'rounded-full' }"
                 icon="i-heroicons-link-solid"
                 target="_blank"
+                @click="connectCommunity(row)"
               />
             </UTooltip>
             <UTooltip
-              v-if="user.roles.includes(ERole.Admin)"
+              v-if="user.roles?.includes(ERole.Admin)"
               text="Xóa cộng đồng"
             >
               <UButton

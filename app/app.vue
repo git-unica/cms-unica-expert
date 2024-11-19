@@ -29,14 +29,6 @@ useSeoMeta({
   twitterImage: 'https://dashboard-template.nuxt.dev/social-card.png',
   twitterCard: 'summary_large_image'
 })
-
-const sse = useState('sse')
-if (import.meta.client) {
-  const eventSource = new EventSource(`/api/events/sse`)
-  eventSource.onmessage = (event) => {
-    sse.value = event.data
-  }
-}
 </script>
 
 <template>
