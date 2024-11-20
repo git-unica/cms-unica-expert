@@ -3,5 +3,6 @@ export const ERole = {
   Admin: 'administrator',
   Accountant: 'accountant',
   Sale: 'sale',
-  Support: 'support'
+  Support: 'support',
+  Marketing: 'marketing'
 } as const
