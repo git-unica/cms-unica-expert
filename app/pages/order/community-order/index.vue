@@ -525,7 +525,9 @@ const isCanProcessOrder = computed(() => {
           {{ row.type === ECommunityOrderType.JOIN_COMMUNITY_FEE ? row.period + ' tháng' : '-' }}
         </template>
         <template #total_amount-data="{ row }">
-          <div class="text-right">{{ numeral(row.total_amount).format() }}</div>
+          <div class="text-right">
+            {{ numeral(row.total_amount).format() }}
+          </div>
         </template>
         <template #created_at-data="{ row }">
           {{ dayjs(row.created_at).format('DD/MM/YYYY HH:mm:ss') }}
@@ -534,11 +536,26 @@ const isCanProcessOrder = computed(() => {
           {{ row.type === 1 ? 'Membership' : (row.type === 2 ? 'Mua khóa học' : '') }}
         </template>
         <template #status-data="{ row }">
-          <span v-if="row.status === ECommunityOrderStatus.Processing" class="text-orange-500">Chờ xử lý</span>
-          <span v-if="row.status === ECommunityOrderStatus.Paid" class="text-green-500">Thành công</span>
-          <span v-if="row.status === ECommunityOrderStatus.Cancel" class="text-slate-400">Đã hủy</span>
-          <span v-if="row.status === ECommunityOrderStatus.Refund" class="text-teal-500">Hoàn tiền</span>
-          <span v-if="row.status === ECommunityOrderStatus.Removed" class="text-red-500">Đã xóa</span>
+          <span
+            v-if="row.status === ECommunityOrderStatus.Processing"
+            class="text-orange-500"
+          >Chờ xử lý</span>
+          <span
+            v-if="row.status === ECommunityOrderStatus.Paid"
+            class="text-green-500"
+          >Thành công</span>
+          <span
+            v-if="row.status === ECommunityOrderStatus.Cancel"
+            class="text-slate-400"
+          >Đã hủy</span>
+          <span
+            v-if="row.status === ECommunityOrderStatus.Refund"
+            class="text-teal-500"
+          >Hoàn tiền</span>
+          <span
+            v-if="row.status === ECommunityOrderStatus.Removed"
+            class="text-red-500"
+          >Đã xóa</span>
         </template>
         <template #ref-data="{ row }">
           {{
@@ -548,50 +565,59 @@ const isCanProcessOrder = computed(() => {
           }}
         </template>
         <template #payment-data="{ row }">
-          <span v-if="row.payment_status === ECommunityOrderPaymentStatus.NotPay" class="text-orange-500">Chưa TT</span>
-          <span v-if="row.payment_status === ECommunityOrderPaymentStatus.Paid" class="text-green-500">Đã TT</span>
-          <span v-if="row.payment_status === ECommunityOrderPaymentStatus.Cancel" class="text-slate-400">Đã hủy</span>
+          <span
+            v-if="row.payment_status === ECommunityOrderPaymentStatus.NotPay"
+            class="text-orange-500"
+          >Chưa TT</span>
+          <span
+            v-if="row.payment_status === ECommunityOrderPaymentStatus.Paid"
+            class="text-green-500"
+          >Đã TT</span>
+          <span
+            v-if="row.payment_status === ECommunityOrderPaymentStatus.Cancel"
+            class="text-slate-400"
+          >Đã hủy</span>
         </template>
         <template #note-data="{ row }">
           <span class="whitespace-nowrap overflow-hidden text-ellipsis block w-[200px]">{{ row.note }}</span>
         </template>
-        <template #sale-data="{ row }">
-          <div v-if="row.sale_name !== ''">
-            <div v-if="row.sale_avatar !== ''">
-              <UTooltip
-                :text="row.sale_name"
-                :popper="{ placement: 'right' }"
-              >
-                <UAvatar
-                  :src="row.sale_avatar"
-                  alt="Avatar"
-                />
-              </UTooltip>
-            </div>
-            <div v-else>
-              {{ row.sale_name }}
-            </div>
-          </div>
-          <div v-else>
-            <UTooltip
-              text="Gán sale"
-              :popper="{ placement: 'right' }"
-            >
-              <UButton
-                icon="i-heroicons-user-plus"
-                size="sm"
-                :ui="{
-                  rounded: 'rounded-full',
-                  variant: {
-                    solid: 'bg-white-500 text-black hover:bg-white-500 '
-                  }
-                }"
-                class="text-gray-500"
-                @click="onChooseSale(row._id)"
-              />
-            </UTooltip>
-          </div>
-        </template>
+        <!--        <template #sale-data="{ row }"> -->
+        <!--          <div v-if="row.sale_name !== ''"> -->
+        <!--            <div v-if="row.sale_avatar !== ''"> -->
+        <!--              <UTooltip -->
+        <!--                :text="row.sale_name" -->
+        <!--                :popper="{ placement: 'right' }" -->
+        <!--              > -->
+        <!--                <UAvatar -->
+        <!--                  :src="row.sale_avatar" -->
+        <!--                  alt="Avatar" -->
+        <!--                /> -->
+        <!--              </UTooltip> -->
+        <!--            </div> -->
+        <!--            <div v-else> -->
+        <!--              {{ row.sale_name }} -->
+        <!--            </div> -->
+        <!--          </div> -->
+        <!--          <div v-else> -->
+        <!--            <UTooltip -->
+        <!--              text="Gán sale" -->
+        <!--              :popper="{ placement: 'right' }" -->
+        <!--            > -->
+        <!--              <UButton -->
+        <!--                icon="i-heroicons-user-plus" -->
+        <!--                size="sm" -->
+        <!--                :ui="{ -->
+        <!--                  rounded: 'rounded-full', -->
+        <!--                  variant: { -->
+        <!--                    solid: 'bg-white-500 text-black hover:bg-white-500 ' -->
+        <!--                  } -->
+        <!--                }" -->
+        <!--                class="text-gray-500" -->
+        <!--                @click="onChooseSale(row._id)" -->
+        <!--              /> -->
+        <!--            </UTooltip> -->
+        <!--          </div> -->
+        <!--        </template> -->
         <template #action-data="{ row }">
           <div class="flex gap-1 justify-center">
             <UPopover mode="hover">
