@@ -4,6 +4,7 @@ import Notiflix from 'notiflix'
 import slugify from 'slugify'
 import type { IResponsePagination, Post } from '~/types'
 import { EStatusPost } from '~/enums/status-post.enum'
+import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
   {
@@ -29,6 +30,8 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
@@ -59,6 +62,13 @@ const query = reactive({
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
 
+if (![ERole.Admin, ERole.Marketing].some(role => user.value?.roles.includes(role))) {
+  showError({
+    statusCode: 403,
+    statusMessage: 'Không có quyền truy cập bài viết'
+  })
+}
+
 const schema = object({
   title: string().required('Không để trống'),
   description: string().required('Không để trống'),
@@ -69,7 +79,6 @@ const schema = object({
 const { data: pagePost, status, refresh } = await useLazyFetch<IResponsePagination<Post>>('/api/v1/posts', {
   query,
   headers: useRequestHeaders(['cookie']),
-  server: false,
   default: () => ({
     meta: {
       page: 0,

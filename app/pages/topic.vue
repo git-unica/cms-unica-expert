@@ -2,6 +2,7 @@
 import { object, string } from 'yup'
 import Notiflix from 'notiflix'
 import type { IResponsePagination, Topic } from '~/types'
+import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
   {
@@ -31,6 +32,8 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
@@ -55,6 +58,13 @@ const createIcon = ref() as Ref<File>
 const { base64: createIconBase64 } = useBase64(createIcon)
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
+
+if (![ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role))) {
+  showError({
+    statusCode: 403,
+    statusMessage: 'Không có quyền truy cập chủ đề'
+  })
+}
 
 const schema = object({
   title: string().required('Không được trống')

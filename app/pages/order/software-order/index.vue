@@ -5,7 +5,7 @@ import numeral from 'numeral'
 import { format, sub } from 'date-fns'
 import type { FormSubmitEvent } from '#ui/types'
 import { OrderPaymentStatus, OrderStatus } from '~/enums/order-status.enum'
-import type { Order } from '~/types'
+import type { Order, User } from '~/types'
 import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
@@ -67,11 +67,14 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const page = ref(1)
 const query = reactive({
   page,
-  'sort[_id]': -1
+  'sort[_id]': -1,
+  'filter[sale_id]': [ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role)) ? undefined : user.value?._id
 })
 const errorMsg = ref()
 
@@ -337,7 +340,7 @@ const {
 
 const userData = computed(() => {
   return userSales.value
-    ? userSales.value.map((user) => {
+    ? userSales.value.map((user: User) => {
       return {
         label: user.full_name,
         value: user._id
@@ -374,8 +377,6 @@ const onAgreeChooseSale = async () => {
 }
 
 // click button tìm kiếm
-const authStore = useAuthStore()
-const { user } = storeToRefs(authStore)
 const onSearch = async () => {
   if (selectedContent.value && textSearch.value) {
     query['filter[content_type]'] = selectedContent.value
@@ -460,33 +461,33 @@ if (!Object.keys(numeral.locales).includes('vn')) {
             <USelectMenu
               v-model="selectedContent"
               :options="contentOptions"
-              value-attribute="value"
-              option-attribute="label"
-              class="w-[100px]"
+              :ui="{
+                base: 'h-full'
+              }"
               :ui-menu="{
                 trigger: 'h-full'
               }"
-              :ui="{
-                base: 'h-full'
-              }"
+              class="w-[100px]"
+              option-attribute="label"
+              value-attribute="value"
             />
             <UInput
               v-model="textSearch"
-              placeholder="Tìm kiếm..."
-              class="w-[220px]"
               :ui="{
                 base: 'h-full'
               }"
+              class="w-[220px]"
+              placeholder="Tìm kiếm..."
             />
             <div class="flex justify-center items-center gap-2">
               <UPopover :popper="{ placement: 'bottom-start' }">
                 <UButton
-                  icon="i-heroicons-calendar-days-20-solid"
                   :ui="{
                     variant: {
                       solid: 'bg-white text-gray-900 border border-solid border-[#ccc] hover:bg-[#ccc]'
                     }
                   }"
+                  icon="i-heroicons-calendar-days-20-solid"
                 >
                   {{ format(selectedDate.start, 'd MMM, yyy') }} - {{ format(selectedDate.end, 'd MMM, yyy') }}
                 </UButton>
@@ -504,57 +505,57 @@ if (!Object.keys(numeral.locales).includes('vn')) {
             <USelectMenu
               v-model="selectedStatus"
               :options="statusOptions"
-              placeholder="Trạng thái"
-              value-attribute="value"
-              option-attribute="label"
-              class="w-[200px]"
-              :ui-menu="{
-                trigger: 'h-full'
-              }"
               :ui="{
                 base: 'h-full'
               }"
+              :ui-menu="{
+                trigger: 'h-full'
+              }"
+              class="w-[200px]"
+              option-attribute="label"
+              placeholder="Trạng thái"
+              value-attribute="value"
             />
             <USelectMenu
               v-model="selectedPaymentStatus"
               :options="paymentStatusOptions"
-              placeholder="Thanh toán"
-              value-attribute="value"
-              option-attribute="label"
-              class="w-[150px]"
-              :ui-menu="{
-                trigger: 'h-full'
-              }"
               :ui="{
                 base: 'h-full'
               }"
+              :ui-menu="{
+                trigger: 'h-full'
+              }"
+              class="w-[150px]"
+              option-attribute="label"
+              placeholder="Thanh toán"
+              value-attribute="value"
             />
             <div>
               <UButton
-                icon="i-heroicons-magnifying-glass-solid"
-                size="sm"
-                color="primary"
-                variant="solid"
-                label="Button"
                 :trailing="false"
                 :ui="{
                   base: 'h-full'
                 }"
+                color="primary"
+                icon="i-heroicons-magnifying-glass-solid"
+                label="Button"
+                size="sm"
+                variant="solid"
                 @click="onSearch"
               >
                 Tìm
               </UButton>
             </div>
             <UButton
-              icon="i-heroicons-x-mark-20-solid"
-              size="sm"
-              label="Button"
               :trailing="false"
               :ui="{
                 variant: {
                   solid: 'bg-[#94A3B8] hover:bg-gray-400'
                 }
               }"
+              icon="i-heroicons-x-mark-20-solid"
+              label="Button"
+              size="sm"
               @click="onResetFilter"
             >
               Bỏ lọc
@@ -587,8 +588,8 @@ if (!Object.keys(numeral.locales).includes('vn')) {
         <template #order_code-data="{ row }">
           <div class="text-center font-bold">
             <UTooltip
-              text="Chi tiết đơn"
               :popper="{ placement: 'right' }"
+              text="Chi tiết đơn"
             >
               <ULink
                 :to="'/order/software-order/' + row.order_code"
@@ -675,8 +676,8 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           <div v-if="row.sale_name !== ''">
             <div v-if="row.sale_avatar !== ''">
               <UTooltip
-                :text="row.sale_name"
                 :popper="{ placement: 'right' }"
+                :text="row.sale_name"
               >
                 <UAvatar
                   :src="row.sale_avatar"
@@ -690,12 +691,10 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           </div>
           <div v-else>
             <UTooltip
-              text="Gán sale"
               :popper="{ placement: 'right' }"
+              text="Gán sale"
             >
               <UButton
-                icon="i-heroicons-user-plus"
-                size="sm"
                 :ui="{
                   rounded: 'rounded-full',
                   variant: {
@@ -703,6 +702,8 @@ if (!Object.keys(numeral.locales).includes('vn')) {
                   }
                 }"
                 class="text-gray-500"
+                icon="i-heroicons-user-plus"
+                size="sm"
                 @click="onChooseSale(row._id)"
               />
             </UTooltip>
@@ -731,8 +732,8 @@ if (!Object.keys(numeral.locales).includes('vn')) {
                   >
                     <UButton
                       :ui="{ rounded: 'rounded-full' }"
-                      icon="i-heroicons-clipboard-document-check-solid"
                       color="orange"
+                      icon="i-heroicons-clipboard-document-check-solid"
                       @click="redirectToReceipt(row)"
                     />
                   </UTooltip>
@@ -790,10 +791,10 @@ if (!Object.keys(numeral.locales).includes('vn')) {
                 Xóa đơn hàng
               </h3>
               <UButton
-                color="gray"
-                variant="ghost"
-                icon="i-heroicons-x-mark-20-solid"
                 class="-my-1"
+                color="gray"
+                icon="i-heroicons-x-mark-20-solid"
+                variant="ghost"
                 @click="isOpenDeleteOrderModal = false"
               />
             </div>
@@ -802,15 +803,15 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           <template #footer>
             <div class="flex gap-2 justify-end">
               <UButton
-                label="Thoát"
-                color="red"
                 :ui="{ padding: { sm: 'px-5 py-2' } }"
+                color="red"
+                label="Thoát"
                 @click="closeDeleteOrderModal"
               />
               <UButton
-                label="Đồng ý"
-                color="primary"
                 :ui="{ padding: { sm: 'px-5 py-2' } }"
+                color="primary"
+                label="Đồng ý"
                 @click="onDeleteOrder"
               />
             </div>
@@ -842,10 +843,10 @@ if (!Object.keys(numeral.locales).includes('vn')) {
                 }}
               </h3>
               <UButton
-                color="gray"
-                variant="ghost"
-                icon="i-heroicons-x-mark-20-solid"
                 class="-my-1"
+                color="gray"
+                icon="i-heroicons-x-mark-20-solid"
+                variant="ghost"
                 @click="closeChangeStatusOrderModal"
               />
             </div>
@@ -868,15 +869,15 @@ if (!Object.keys(numeral.locales).includes('vn')) {
             >
               <UTextarea
                 v-model="state.cancel_reason"
-                placeholder="Nhập lý do hủy đơn..."
                 :rows="4"
+                placeholder="Nhập lý do hủy đơn..."
               />
             </UFormGroup>
 
             <div class="flex justify-end">
               <UButton
-                type="submit"
                 :ui="{ padding: { sm: 'px-5 py-2' } }"
+                type="submit"
               >
                 Đồng ý
               </UButton>
@@ -888,15 +889,15 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           >
             <div class="flex gap-2 justify-end">
               <UButton
-                label="Thoát"
-                color="red"
                 :ui="{ padding: { sm: 'px-5 py-2' } }"
+                color="red"
+                label="Thoát"
                 @click="closeChangeStatusOrderModal"
               />
               <UButton
-                label="Đồng ý"
-                color="primary"
                 :ui="{ padding: { sm: 'px-5 py-2' } }"
+                color="primary"
+                label="Đồng ý"
                 @click="onChangeStatusOrderToPaid"
               />
             </div>
@@ -922,10 +923,10 @@ if (!Object.keys(numeral.locales).includes('vn')) {
                 Gán sale xử lý đơn hàng
               </h3>
               <UButton
-                color="gray"
-                variant="ghost"
-                icon="i-heroicons-x-mark-20-solid"
                 class="-my-1"
+                color="gray"
+                icon="i-heroicons-x-mark-20-solid"
+                variant="ghost"
                 @click="isOpenChooseSaleModal = false"
               />
             </div>
@@ -934,14 +935,14 @@ if (!Object.keys(numeral.locales).includes('vn')) {
             <p>Danh sách sales</p>
             <USelectMenu
               v-model="selectedSale"
-              clear-search-on-close
-              class="w-full"
-              placeholder="--- Chọn sale ---"
               :options="userData"
+              class="w-full"
+              clear-search-on-close
+              option-attribute="label"
+              placeholder="--- Chọn sale ---"
               searchable
               searchable-placeholder="Tìm kiếm sale..."
               value-attribute="value"
-              option-attribute="label"
             >
               <template #option-empty="{ query }">
                 Không tìm thấy sale <q>{{ query }}</q>
@@ -951,9 +952,9 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           <template #footer>
             <div class="flex gap-2 justify-end">
               <UButton
-                label="Đồng ý"
-                color="primary"
                 :ui="{ padding: { sm: 'px-5 py-2' } }"
+                color="primary"
+                label="Đồng ý"
                 @click="onAgreeChooseSale"
               />
             </div>

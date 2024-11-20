@@ -2,10 +2,19 @@
 import type { Role, User } from '~/types'
 import { ERole } from '~/enums/role.enum'
 
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const q = ref()
 const keyword = refDebounced(q, 500)
 const isInviteModalOpen = ref(false)
 const haveNewMember = ref(false)
+
+if (![ERole.Admin].some(role => user.value?.roles.includes(role))) {
+  showError({
+    statusCode: 403,
+    statusMessage: 'Không có chức năng phân quyền'
+  })
+}
 
 const { data: roles, status } = useFetch<Role[]>('/api/v1/admin/roles/list', {
   headers: useRequestHeaders(['cookie'])

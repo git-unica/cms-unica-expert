@@ -53,6 +53,8 @@ const defaultColumns = [
 
 const toast = useToast()
 const config = useRuntimeConfig()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const q = ref()
 const keyword = refDebounced(q, 500)
 const selected = ref<Community[]>([])
@@ -73,11 +75,10 @@ const query = reactive({
   'filter[type]': filterType,
   'filter[package_code]': filterPackageCode,
   'filter[created_at][between]': filterCreatedAt,
+  'filter[sale_id]': [ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role)) ? undefined : user.value?._id,
   'w[]': 'owner',
   page
 })
-const authStore = useAuthStore()
-const { user } = storeToRefs(authStore)
 
 const columns = computed(() =>
   defaultColumns.filter(column => selectedColumns.value.includes(column))
@@ -215,7 +216,7 @@ const exportExcel = async () => {
 
 const connectCommunity = async (community: Community) => {
   const name = community.short_name ?? community._id
-  if (user.value.roles?.some(role => [ERole.Admin, ERole.Sale, ERole.Support].includes(role))) {
+  if ([ERole.Admin, ERole.Sale, ERole.Support].some(role => user.value.roles?.includes(role))) {
     try {
       await $fetch<{ access_token: string }>('/api/v1/auth/create-token-owner', {
         method: 'POST',

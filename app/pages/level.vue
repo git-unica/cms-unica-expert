@@ -2,6 +2,7 @@
 import { number, object, string } from 'yup'
 import Notiflix from 'notiflix'
 import type { Level } from '~/types'
+import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
   {
@@ -26,6 +27,8 @@ const defaultColumns = [
 ]
 
 const toast = useToast()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const selectedColumns = ref(defaultColumns.filter(c => !c.hidden))
 const input = ref<{ input: HTMLInputElement }>()
 const isOpenEditModal = ref(false)
@@ -37,6 +40,13 @@ const newRow = ref({
 })
 
 const columns = computed(() => defaultColumns.filter(column => selectedColumns.value.includes(column)))
+
+if (![ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role))) {
+  showError({
+    statusCode: 403,
+    statusMessage: 'Không có quyền truy cập cấp độ thành viên'
+  })
+}
 
 const schema = object({
   name: string().required('Không được trống'),

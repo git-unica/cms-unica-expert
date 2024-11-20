@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { format } from 'date-fns'
 import type { AffiliateLevel, IResponsePagination, User } from '~/types'
+import { ERole } from '~/enums/role.enum'
 
 const defaultColumns = [
   {
@@ -27,6 +28,8 @@ const defaultColumns = [
 ]
 
 const config = useRuntimeConfig()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const q = ref()
 const keyword = refDebounced(q, 500)
 const selected = ref<User[]>([])
@@ -38,6 +41,7 @@ const page = ref(1)
 const query = reactive({
   keyword,
   page,
+  'filter[sale_id]': [ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role)) ? undefined : user.value?._id,
   'sort[_id]': -1
 })
 const errorMsg = ref()

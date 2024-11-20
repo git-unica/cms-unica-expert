@@ -2,13 +2,17 @@
 import dayjs from 'dayjs'
 import numeral from 'numeral'
 import { useClipboard } from '@vueuse/core'
-import { type InferType, number, object, string, ref as YupRef } from 'yup'
+import { type InferType, number, object, ref as YupRef, string } from 'yup'
 import { OrderPaymentStatus, OrderStatus } from '~/enums/order-status.enum'
 import type { FormSubmitEvent } from '#ui/types'
+import { ERole } from '~/enums/role.enum'
 
 const { copy, copied, isSupported } = useClipboard({ legacy: true })
 const route = useRoute()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const orderCode = route?.params?.id
+
 const { data: orderDetail, refresh } = await useFetch(`/api/v1/order/${orderCode}`, {
   headers: useRequestHeaders(['cookie']),
   default: () => ({
@@ -23,6 +27,18 @@ const { data: orderDetail, refresh } = await useFetch(`/api/v1/order/${orderCode
     data: []
   })
 })
+
+if (!orderDetail.value) showError({
+  statusCode: 404,
+  statusMessage: 'Đơn hàng không tồn tại'
+})
+
+if (![ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role)) && orderDetail.value.sale_id !== user.value?._id) {
+  showError({
+    statusCode: 403,
+    statusMessage: 'Không có quyền truy cập đơn hàng phần mềm'
+  })
+}
 
 const page = ref(1)
 const orderDetailData = computed(() => {
@@ -83,7 +99,6 @@ const state = reactive({
   pay_gate_fee: orderDetailData.value.pay_gate_fee,
   actual_amount: orderDetailData.value.pay_gate_fee > 0 ? orderDetailData.value.total_amount - orderDetailData.value.pay_gate_fee : orderDetailData.value.total_amount
 })
-console.log('state', state)
 watchEffect(() => {
   if (orderDetail.value) {
     Object.assign(state, orderDetail.value)
@@ -136,7 +151,8 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
           payload['content_note'].push({
             message: `Thay đổi trạng thái từ ${fromStatus} thành ${toStatus}`
           })
-          break }
+          break
+        }
         case 'payment_status': {
           const fromStatus = orderDetailData.value[key] === OrderPaymentStatus.NotPay
             ? 'Chưa thanh toán'
@@ -155,7 +171,8 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
           payload['content_note'].push({
             message: `Thay đổi thanh toán từ ${fromStatus} thành ${toStatus}`
           })
-          break }
+          break
+        }
         case 'revenue':
           payload['content_note'].push({
             message: `Thay đổi thực thu từ ${numeral(orderDetailData.value[key]).format() + ' VND'} thành ${numeral(payload[key]).format() + ' VND'}`
@@ -192,7 +209,10 @@ const queryHistory = reactive({
   page,
   'sort[_id]': -1
 })
-const { data: listProcessHistory, refresh: refreshHistory } = await useFetch(`/api/v1/order/process-history/${orderDetailData.value._id}`, {
+const {
+  data: listProcessHistory,
+  refresh: refreshHistory
+} = await useFetch(`/api/v1/order/process-history/${orderDetailData.value._id}`, {
   headers: useRequestHeaders(['cookie']),
   query: queryHistory,
   default: () => ({
@@ -286,17 +306,17 @@ if (!numeral.locales.hasOwnProperty('vn')) {
 <template>
   <UDashboardPage>
     <UDashboardPanel
-      grow
       :ui="{
         wrapper: 'overflow-y-auto'
       }"
+      grow
     >
       <UDashboardNavbar
-        title="Đơn hàng"
         :badge="orderCode"
         :ui="{
           right: 'w-1/4'
         }"
+        title="Đơn hàng"
       />
       <UForm
         :schema="schema"
@@ -308,30 +328,30 @@ if (!numeral.locales.hasOwnProperty('vn')) {
           <!---->
           <div class="flex flex-col gap-6">
             <UFormGroup
+              class="min-h-14"
               label="Họ tên"
               name="buyer_name"
-              class="min-h-14"
             >
               <label for="">{{ state.buyer_name }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Email"
               name="buyer_email"
-              class="min-h-14"
             >
               <label for="">{{ state.buyer_email }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Phone"
               name="buyer_phone"
-              class="min-h-14"
             >
               <label for="">{{ state.buyer_phone }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Ref"
               name="ref"
-              class="min-h-14"
             >
               <label for="">{{ state.ref ? state.ref : '-' }}</label>
             </UFormGroup>
@@ -340,51 +360,57 @@ if (!numeral.locales.hasOwnProperty('vn')) {
           <!---->
           <div class="flex flex-col gap-6">
             <UFormGroup
+              class="min-h-14"
               label="Tổng tiền"
               name="origin_total_amount"
-              class="min-h-14"
             >
               <label for="">{{ state.origin_total_amount ? numeral(state.origin_total_amount).format() : 0 }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Thực thu"
               name="actual_amount"
-              class="min-h-14"
             >
               <label for="">{{ state.actual_amount ? numeral(state.actual_amount).format() : 0 }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Giảm trừ gói cũ"
               name="money_discount_from_old_package"
-              class="min-h-14"
             >
-              <label for="">{{ state.money_discount_from_old_package ? numeral(state.money_discount_from_old_package).format() : 0 }}</label>
+              <label for="">{{
+                state.money_discount_from_old_package ? numeral(state.money_discount_from_old_package).format() : 0
+              }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Cổng thanh toán"
               name="pay_gate"
-              class="min-h-14"
             >
-              <label for="">{{ state.pay_gate ? (state.pay_gate === 'Bank_Tranfer' ? 'Chuyển khoản ngân hàng' : state.pay_gate) : '-' }}</label>
+              <label for="">{{
+                state.pay_gate ? (state.pay_gate === 'Bank_Tranfer' ? 'Chuyển khoản ngân hàng' : state.pay_gate) : '-'
+              }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Phí cổng thanh toán"
               name="pay_gate_fee"
-              class="min-h-14"
             >
               <label for="">{{ state.pay_gate_fee ? state.pay_gate_fee : '-' }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Giảm giá"
               name="discount_value"
-              class="min-h-14"
             >
-              <label for="">{{ state.discount_value + ' %' }} ({{ state.origin_total_amount * state.discount_value/100 }})</label>
+              <label for="">{{ state.discount_value + ' %' }} ({{
+                state.origin_total_amount * state.discount_value / 100
+              }})</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Doanh thu"
               name="revenue"
-              class="min-h-14"
             >
               <div class="flex gap-2 items-end">
                 <UInput
@@ -394,38 +420,40 @@ if (!numeral.locales.hasOwnProperty('vn')) {
                     wrapper: 'h-full',
                     base: 'h-full'
                   }"
-                >
-                </UInput>
+                />
                 <label
                   v-if="!isEditRevenue"
                   for=""
                 >
                   {{ state.revenue ? numeral(orderDetailData.revenue).format() : 0 }}
                 </label>
-                <UTooltip text="Chỉnh sửa">
+                <UTooltip
+                  v-if="[ERole.Admin, ERole.Support].some(role => user.roles?.includes(role))"
+                  text="Chỉnh sửa"
+                >
                   <UButton
-                    icon="i-heroicons-pencil-square"
-                    size="sm"
-                    color="primary"
-                    square
-                    variant="solid"
                     :ui="{
                       variant: {
                         solid: 'bg-white text-black  hover:bg-[#ccc]'
                       }
                     }"
+                    color="primary"
+                    icon="i-heroicons-pencil-square"
+                    size="sm"
+                    square
+                    variant="solid"
                     @click="onEditRevenue"
                   />
                 </UTooltip>
               </div>
             </UFormGroup>
             <UFormGroup
-              label="Link thanh toán"
-              name="short_payment_link"
               :ui="{
                 container: 'flex gap-2'
               }"
               class="min-h-14"
+              label="Link thanh toán"
+              name="short_payment_link"
             >
               <UInput
                 v-model="state.short_payment_link"
@@ -437,12 +465,12 @@ if (!numeral.locales.hasOwnProperty('vn')) {
                 class="w-1/4"
               >
                 <UButton
-                  class="min-h-8 h-8 px-3 py-2 flex justify-center items-center w-full"
                   :ui="{
                     variant: {
                       solid: 'bg-white text-black border border-solid border-[#ccc] hover:bg-[#ccc] hover:text-white'
                     }
                   }"
+                  class="min-h-8 h-8 px-3 py-2 flex justify-center items-center w-full"
                   @click="copy(state.short_payment_link)"
                 >
                   <span v-if="!copied">Copy</span>
@@ -455,93 +483,99 @@ if (!numeral.locales.hasOwnProperty('vn')) {
           <!---->
           <div class="flex flex-col gap-6">
             <UFormGroup
+              class="min-h-14"
               label="Sale"
               name="sale"
-              class="min-h-14"
             >
               <label for="">{{ state.sale ? state.sale.full_name : '-' }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Trạng thái"
               name="status"
-              class="min-h-14"
             >
               <USelectMenu
                 v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
                 v-model="state.status"
                 :options="statusOptions"
-                value-attribute="value"
-                option-attribute="label"
                 :ui="{
                   base: 'w-1/2'
                 }"
                 :ui-menu="{
                   container: '!w-1/2 !left-0'
                 }"
+                option-attribute="label"
+                value-attribute="value"
               />
               <span v-if="orderDetailData.status === OrderStatus.Paid">Thành công</span>
               <span v-if="orderDetailData.status === OrderStatus.Cancel">Đã hủy</span>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Thanh toán"
               name="payment_status"
-              class="min-h-14"
             >
               <USelectMenu
                 v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
                 v-model="state.payment_status"
                 :options="paymentStatusOptions"
-                value-attribute="value"
-                option-attribute="label"
                 :ui="{
                   base: 'w-1/2'
                 }"
                 :ui-menu="{
                   container: '!w-1/2 !left-0'
                 }"
+                option-attribute="label"
+                value-attribute="value"
               />
               <span v-if="orderDetailData.status === OrderStatus.Paid || orderDetailData.status === OrderStatus.Cancel">
-                {{ paymentStatusOptions.filter(item => item.value === state.payment_status) ? paymentStatusOptions.filter(item => item.value === state.payment_status)[0]['label'] : '' }}
+                {{
+                  paymentStatusOptions.filter(item => item.value === state.payment_status) ? paymentStatusOptions.filter(item => item.value === state.payment_status)[0]['label'] : ''
+                }}
               </span>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Ngày thanh toán"
               name="payment_date"
-              class="min-h-14"
             >
-              <label for="">{{ state.payment_date ? dayjs(state.payment_date).format('DD/MM/YYYY HH:mm:ss') : '-' }}</label>
+              <label for="">{{
+                state.payment_date ? dayjs(state.payment_date).format('DD/MM/YYYY HH:mm:ss') : '-'
+              }}</label>
             </UFormGroup>
           </div>
           <!---->
           <!---->
           <div class="flex flex-col gap-6">
             <UFormGroup
+              class="min-h-14"
               label="Cộng đồng"
               name="community_name"
-              class="min-h-14"
             >
               <label for="">{{ state.community_name }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Sản phẩm"
               name="package_code"
-              class="min-h-14"
             >
               <label for="">{{ state.package_code }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Số tháng"
               name="period"
-              class="min-h-14"
             >
               <label for="">{{ state.period + ' tháng' }}</label>
             </UFormGroup>
             <UFormGroup
+              class="min-h-14"
               label="Ngày tạo"
               name="created_at"
-              class="min-h-14"
             >
-              <label for="">{{ state.created_at ? dayjs(orderDetailData.created_at).format('DD/MM/YYYY HH:mm:ss') : '-' }}</label>
+              <label for="">{{
+                state.created_at ? dayjs(orderDetailData.created_at).format('DD/MM/YYYY HH:mm:ss') : '-'
+              }}</label>
             </UFormGroup>
           </div>
           <!--          <UFormGroup v-if="orderDetailData.status === OrderStatus.Cancel" label="Lý do hủy đơn" name="cancel_reason"> -->
@@ -553,9 +587,9 @@ if (!numeral.locales.hasOwnProperty('vn')) {
           <!--          </UFormGroup> -->
         </div>
         <UFormGroup
+          class="px-4 py-4"
           label="Ghi chú"
           name="note"
-          class="px-4 py-4"
         >
           <UTextarea
             v-model="state.note"
@@ -564,19 +598,18 @@ if (!numeral.locales.hasOwnProperty('vn')) {
         </UFormGroup>
         <div class="px-4 py-4 flex gap-2">
           <UButton
-            type="submit"
+            v-if="orderDetailData.status !== OrderStatus.Cancel"
             :ui="{
               padding: {
                 sm: 'px-9'
               }
             }"
-            v-if="orderDetailData.status !== OrderStatus.Cancel"
+            type="submit"
           >
             Lưu
           </UButton>
           <UButton
             v-if="orderDetailData.status !== OrderStatus.Paid && orderDetailData.status !== OrderStatus.Cancel"
-            type="button"
             :ui="{
               padding: {
                 sm: 'px-9'
@@ -585,6 +618,7 @@ if (!numeral.locales.hasOwnProperty('vn')) {
                 solid: 'text-black bg-white hover:bg-primary-500 hover:text-white border border-solid border-[#ccc]'
               }
             }"
+            type="button"
             @click="onApproveOrder"
           >
             Duyệt đơn
@@ -604,15 +638,18 @@ if (!numeral.locales.hasOwnProperty('vn')) {
         class="ml-8 mb-8 text-green-500 max-w-[235px]"
       >
         <span class="flex items-center gap-2 border border-solid border-slate-500 px-3 py-2 rounded-lg">
-          Danh sách chia hoa hồng <UIcon name="i-heroicons-arrow-right" class="w-5 h-5" />
+          Danh sách chia hoa hồng <UIcon
+            class="w-5 h-5"
+            name="i-heroicons-arrow-right"
+          />
         </span>
       </ULink>
       <div class="px-8">
         <p>Lịch sử xử lý đơn hàng</p>
         <UTable
           :columns="historyColumns"
-          :rows="processHistoryData"
           :empty-state="{ icon: 'i-heroicons-circle-stack-20-solid', label: 'Không có dữ liệu.' }"
+          :rows="processHistoryData"
           class="w-full overflow-y-auto"
         >
           <template #created_at-data="{ row }">
@@ -630,7 +667,10 @@ if (!numeral.locales.hasOwnProperty('vn')) {
           </template>
         </UTable>
         <UDivider />
-        <div v-if="processHistoryMeta.itemCount > 0" class="my-2 flex justify-end mr-6 items-center gap-2">
+        <div
+          v-if="processHistoryMeta.itemCount > 0"
+          class="my-2 flex justify-end mr-6 items-center gap-2"
+        >
           <UPagination
             v-model="page"
             :page-count="processHistoryMeta.take"

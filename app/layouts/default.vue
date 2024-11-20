@@ -1,6 +1,10 @@
 <script lang="ts" setup>
 // const appConfig = useAppConfig()
+import { ERole } from '~/enums/role.enum'
+
 const { isHelpSlideoverOpen } = useDashboard()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 
 const links = [{
   id: 'home',
@@ -35,6 +39,7 @@ const links = [{
   label: 'Chủ đề',
   icon: 'i-heroicons-rectangle-group',
   to: '/topic',
+  roles: [ERole.Admin, ERole.Support],
   tooltip: {
     text: 'Chủ đề',
     shortcuts: ['G', 'T']
@@ -45,6 +50,7 @@ const links = [{
   label: 'Bài viết',
   icon: 'i-heroicons-newspaper',
   to: '/post',
+  roles: [ERole.Admin, ERole.Marketing],
   tooltip: {
     text: 'Bài viết',
     shortcuts: ['G', 'P']
@@ -55,6 +61,7 @@ const links = [{
   label: 'Cấp độ thành viên',
   icon: 'i-heroicons-rectangle-stack',
   to: '/level',
+  roles: [ERole.Admin, ERole.Support],
   tooltip: {
     text: 'Cấp độ thành viên',
     shortcuts: ['G', 'L']
@@ -67,10 +74,12 @@ const links = [{
   children: [{
     label: 'Phần mềm',
     to: '/order/software-order',
+    roles: [ERole.Admin, ERole.Support, ERole.Sale],
     exact: true
   }, {
     label: 'Khóa học',
-    to: '/order/community-order'
+    to: '/order/community-order',
+    roles: [ERole.Admin, , ERole.Support]
   }],
   tooltip: {
     text: 'Đơn hàng',
@@ -87,7 +96,8 @@ const links = [{
     exact: true
   }, {
     label: 'Quản trị viên',
-    to: '/settings/members'
+    to: '/settings/members',
+    roles: [ERole.Admin]
   }],
   tooltip: {
     text: 'Settings',
@@ -98,7 +108,8 @@ const links = [{
 const footerLinks = [{
   label: 'Thêm nhân viên',
   icon: 'i-heroicons-plus',
-  to: '/settings/members'
+  to: '/settings/members',
+  roles: [ERole.Admin]
 }, {
   label: 'Trợ giúp',
   icon: 'i-heroicons-question-mark-circle',
@@ -133,6 +144,35 @@ const groups = [{
 //   ...color,
 //   active: appConfig.ui.primary === color.label
 // })))
+
+function getAccessibleMenus(links, userRoles) {
+  return links
+    .map((menu) => {
+      // Kiểm tra nếu menu không có roles hoặc user có quyền truy cập
+      const hasAccess
+        = !menu.roles || menu.roles.some(role => userRoles.includes(role))
+
+      // Kiểm tra children (nếu có)
+      let accessibleChildren = []
+      if (menu.children) {
+        accessibleChildren = menu.children.filter(child =>
+          !child.roles || child.roles.some(role => userRoles.includes(role))
+        )
+      }
+
+      // Chỉ trả menu nếu user có quyền hoặc có children hợp lệ
+      if (hasAccess || accessibleChildren.length > 0) {
+        return {
+          ...menu,
+          children: accessibleChildren.length > 0 ? accessibleChildren : undefined
+        }
+      }
+
+      // Loại bỏ menu nếu không có quyền
+      return null
+    })
+    .filter(menu => menu !== null) // Loại bỏ các menu null
+}
 </script>
 
 <template>
@@ -156,7 +196,7 @@ const groups = [{
           <UDashboardSearchButton />
         </template>
 
-        <UDashboardSidebarLinks :links="links" />
+        <UDashboardSidebarLinks :links="getAccessibleMenus(links, user.roles)" />
 
         <!--        <UDivider /> -->
 
@@ -167,7 +207,7 @@ const groups = [{
 
         <div class="flex-1" />
 
-        <UDashboardSidebarLinks :links="footerLinks" />
+        <UDashboardSidebarLinks :links="getAccessibleMenus(footerLinks, user.roles)" />
 
         <UDivider class="sticky bottom-0" />
 
