@@ -259,10 +259,10 @@ const userData = computed(() => {
 })
 
 const isOpenChooseSaleModal = ref(false)
-const onChooseSale = async (orderId: string) => {
-  isOpenChooseSaleModal.value = true
-  selectedOrderId.value = orderId
-}
+// const onChooseSale = async (orderId: string) => {
+//   isOpenChooseSaleModal.value = true
+//   selectedOrderId.value = orderId
+// }
 
 const onAgreeChooseSale = async () => {
   await useFetch(`/api/v1/community-order/assign-sale`, {
