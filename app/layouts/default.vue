@@ -77,9 +77,9 @@ const links = [{
     roles: [ERole.Admin, ERole.Support, ERole.Sale],
     exact: true
   }, {
-    label: 'Khóa học',
+    label: 'Cộng đồng',
     to: '/order/community-order',
-    roles: [ERole.Admin, , ERole.Support]
+    roles: [ERole.Admin, ERole.Support]
   }],
   tooltip: {
     text: 'Đơn hàng',

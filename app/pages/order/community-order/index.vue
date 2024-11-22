@@ -33,16 +33,12 @@ const defaultColumns = [
     label: 'Cộng đồng'
   },
   {
-    key: 'course_name',
-    label: 'Tên khóa học'
+    key: 'product_name',
+    label: 'Tên sản phẩm'
   },
   {
     key: 'period',
     label: 'Thời hạn'
-  },
-  {
-    key: 'sale',
-    label: 'Sale'
   },
   {
     key: 'note',
@@ -148,7 +144,11 @@ const isOpenDeleteOrderModal = ref(false)
 const selectedOrderId = ref()
 const openDeleteOrderModal = (row: Order) => {
   if (row.status === OrderStatus.Paid) {
-    toast.add({ title: 'Thông báo', description: 'Đơn có trạng thái đã thanh toán phải hủy đơn mới được xóa', color: 'red' })
+    toast.add({
+      title: 'Thông báo',
+      description: 'Đơn có trạng thái đã thanh toán phải hủy đơn mới được xóa',
+      color: 'red'
+    })
   } else {
     selectedOrderId.value = row._id
     isOpenDeleteOrderModal.value = true
@@ -526,6 +526,9 @@ const isCanProcessOrder = computed(() => {
               </ULink>
             </UTooltip>
           </div>
+        </template>
+        <template #product_name-data="{ row }">
+          {{ row.type === ECommunityOrderType.JOIN_COMMUNITY_FEE ? 'Phí thành viên' : row.course_name }}
         </template>
         <template #period-data="{ row }">
           {{ row.type === ECommunityOrderType.JOIN_COMMUNITY_FEE ? row.period + ' tháng' : '-' }}
