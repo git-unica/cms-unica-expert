@@ -20,7 +20,7 @@ const defaultColumns = [
     hidden: true
   },
   {
-    key: 'buyer_name',
+    key: 'buyer',
     label: 'Người mua'
   },
   {
@@ -106,6 +106,7 @@ const {
     errorMsg.value = response._data?.message ?? ''
   }
 })
+console.log(orders.value)
 const isOpenDeleteOrderModal = ref(false)
 const selectedOrderId = ref()
 
@@ -585,6 +586,17 @@ if (!Object.keys(numeral.locales).includes('vn')) {
         class="w-full"
         sort-mode="manual"
       >
+        <template #buyer-data="{ row }">
+          <p class="font-bold">
+            {{ row.buyer_name }}
+          </p>
+          <p class="text-xs">
+            {{ row.buyer_email }}
+          </p>
+          <p class="text-xs">
+            {{ row.buyer_phone }}
+          </p>
+        </template>
         <template #order_code-data="{ row }">
           <div class="text-center font-bold">
             <UTooltip
