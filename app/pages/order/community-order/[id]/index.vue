@@ -288,13 +288,6 @@ const onEditRevenue = () => {
         }"
         title="Đơn hàng"
       >
-        <template #right>
-          <span class="ml-4"><strong>Sale:</strong>
-            {{
-              orderDetailData.sale ? orderDetailData.sale.full_name : '-'
-            }}
-          </span>
-        </template>
       </UDashboardNavbar>
 
       <UForm
@@ -341,9 +334,22 @@ const onEditRevenue = () => {
           <div class="flex flex-col gap-6">
             <UFormGroup
               class="min-h-14"
-              label="Tổng tiền"
               name="total_amount"
             >
+              <template #label>
+                <div class="flex gap-2">
+                  <span>Thực thu</span>
+                  <div>
+                    <UTooltip text="Số tiền thực tế khách thanh toán">
+                      <UIcon
+                        name="i-heroicons-information-circle"
+                        class="w-5 h-5"
+                        :popper="{ placement: 'right' }"
+                      />
+                    </UTooltip>
+                  </div>
+                </div>
+              </template>
               <label for="">{{ state.total_amount ? numeral(orderDetailData.total_amount).format() : 0 }}</label>
             </UFormGroup>
             <UFormGroup
@@ -355,12 +361,26 @@ const onEditRevenue = () => {
             </UFormGroup>
             <UFormGroup
               class="min-h-14"
-              label="Doanh thu"
               name="revenue"
             >
-              <div class="flex gap-2 items-end">
+              <template #label>
+                <div class="flex gap-2">
+                  <span>Doanh thu</span>
+                  <div>
+                    <UTooltip text="Số tiền thực tế UNICA nhận được">
+                      <UIcon
+                        name="i-heroicons-information-circle"
+                        class="w-5 h-5"
+                        :popper="{ placement: 'right' }"
+                      />
+                    </UTooltip>
+                  </div>
+                </div>
+              </template>
+              <div class="flex gap-2 items-center">
                 <UInput
-                  v-if="orderDetailData.status !== ECommunityOrderStatus.Cancel && isEditRevenue"
+                  v-if="orderDetailData.status !== ECommunityOrderStatus.Cancel && orderDetailData.status !== ECommunityOrderStatus.Refund
+                    && orderDetailData.status !== ECommunityOrderStatus.Removed && isEditRevenue"
                   v-model="state.revenue"
                   :ui="{
                     wrapper: 'h-full',

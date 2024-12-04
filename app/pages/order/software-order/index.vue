@@ -106,7 +106,7 @@ const {
     errorMsg.value = response._data?.message ?? ''
   }
 })
-console.log(orders.value)
+
 const isOpenDeleteOrderModal = ref(false)
 const selectedOrderId = ref()
 
@@ -419,9 +419,8 @@ const redirectToReceipt = async (row: Order) => {
 
 // user info
 const listUserRoles = user?.value.roles
-console.log('user', user.value)
 const isCanProcessOrder = computed(() => {
-  return listUserRoles.some(item => item === ERole.Sale || item === ERole.Accountant || item === ERole.Admin)
+  return listUserRoles.some(item => item === ERole.Accountant || item === ERole.Admin)
 })
 
 // xử lý format tiền
@@ -597,6 +596,26 @@ if (!Object.keys(numeral.locales).includes('vn')) {
             {{ row.buyer_phone }}
           </p>
         </template>
+        <template #community_name-data="{ row }">
+          <UTooltip
+            :popper="{ placement: 'right' }"
+            text="Chi tiết đơn"
+          >
+            <ULink
+              :to="'/order/software-order/' + row.order_code"
+            >
+              <p class="text-[#6B7280] font-bold">
+                {{ row.community_name }}
+              </p>
+              <span
+                v-if="row.community"
+                class="text-xs"
+              >
+                {{ row.community.short_name ? row.community.short_name : '' }}
+              </span>
+            </ULink>
+          </UTooltip>
+        </template>
         <template #order_code-data="{ row }">
           <div class="text-center font-bold">
             <UTooltip
@@ -686,20 +705,7 @@ if (!Object.keys(numeral.locales).includes('vn')) {
         </template>
         <template #sale-data="{ row }">
           <div v-if="row.sale_name !== ''">
-            <div v-if="row.sale_avatar !== ''">
-              <UTooltip
-                :popper="{ placement: 'right' }"
-                :text="row.sale_name"
-              >
-                <UAvatar
-                  :src="row.sale_avatar"
-                  alt="Avatar"
-                />
-              </UTooltip>
-            </div>
-            <div v-else>
-              {{ row.sale_name }}
-            </div>
+            {{ row.sale_name }}
           </div>
           <div v-else>
             <UTooltip
@@ -739,7 +745,7 @@ if (!Object.keys(numeral.locales).includes('vn')) {
                     />
                   </UTooltip>
                   <UTooltip
-                    v-if="isCanProcessOrder"
+                    v-if="isCanProcessOrder && row.status !== OrderStatus.Removed && row.status !== OrderStatus.Cancel"
                     text="Phiếu thu"
                   >
                     <UButton

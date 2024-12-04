@@ -370,8 +370,12 @@ watch(page, (newPage) => {
 
 // user info
 const listUserRoles = user?.value.roles
-const isCanProcessOrder = computed(() => {
+const canDeleteOrder = computed(() => {
   return listUserRoles.some(item => item === ERole.Sale || item === ERole.Accountant || item === ERole.Admin)
+})
+
+const canHandldeReceipt = computed(() => {
+  return listUserRoles.some(item => item === ERole.Accountant || item === ERole.Admin)
 })
 </script>
 
@@ -645,7 +649,7 @@ const isCanProcessOrder = computed(() => {
                     />
                   </UTooltip>
                   <UTooltip
-                    v-if="isCanProcessOrder"
+                    v-if="canHandldeReceipt && row.status !== ECommunityOrderStatus.Removed && row.status !== ECommunityOrderStatus.Cancel"
                     text="Phiếu thu"
                   >
                     <UButton
@@ -656,7 +660,7 @@ const isCanProcessOrder = computed(() => {
                     />
                   </UTooltip>
                   <UTooltip
-                    v-if="isCanProcessOrder"
+                    v-if="canDeleteOrder"
                     text="Xóa đơn"
                   >
                     <UButton

@@ -96,8 +96,7 @@ const state = reactive({
   ref: orderDetailData.value.ref,
   sale: orderDetailData.value.sale,
   pay_gate: orderDetailData.value.pay_gate,
-  pay_gate_fee: orderDetailData.value.pay_gate_fee,
-  actual_amount: orderDetailData.value.pay_gate_fee > 0 ? orderDetailData.value.total_amount - orderDetailData.value.pay_gate_fee : orderDetailData.value.total_amount
+  pay_gate_fee: orderDetailData.value.pay_gate_fee
 })
 watchEffect(() => {
   if (orderDetail.value) {
@@ -115,8 +114,12 @@ useSeoMeta({
 const schema = object({
   status: number(),
   payment_status: number(),
-  total_amount: number(),
-  revenue: number().max(YupRef('total_amount'), 'Thực thu không thể lớn hơn giá trị đơn hàng'),
+  total_amount: number().transform((value, originalValue) =>
+    String(originalValue).trim() === '' ? null : value
+  ).nullable().required('Giá trị không được để trống').min(0, 'Giá trị tối thiều bằng 0'),
+  revenue: number().transform((value, originalValue) =>
+    String(originalValue).trim() === '' ? null : value
+  ).nullable().required('Giá trị không được để trống').min(0, 'Giá trị tối thiều bằng 0').max(YupRef('total_amount'), 'Doanh thu không thể lớn hơn thực thu'),
   note: string()
 })
 
@@ -281,7 +284,7 @@ const onEditRevenue = () => {
 
 // xử lý format tiền
 numeral.locale('vn')
-if (!numeral.locales.hasOwnProperty('vn')) {
+if (!Object.keys(numeral.locales).includes('vn')) {
   numeral.register('locale', 'vn', {
     delimiters: {
       thousands: '.',
@@ -300,6 +303,28 @@ if (!numeral.locales.hasOwnProperty('vn')) {
       symbol: ' VND'
     }
   })
+}
+
+// là admin mới có thể sửa giá (thực thu)
+const canChangePrice = computed(() => {
+  return user.value?.roles.includes(ERole.Admin)
+})
+const isEditActualMoney = ref(false)
+const onEditActualMoney = () => {
+  isEditActualMoney.value = !isEditActualMoney.value
+}
+
+// sale mới được sửa số tháng
+const canChangeMonth = computed(() => {
+  return user.value?.roles.includes(ERole.Sale)
+})
+const isEditMonth = ref(false)
+const onEditMonth = () => {
+  isEditMonth.value = !isEditMonth.value
+}
+
+const onChangeActualMoney = () => {
+  state.revenue = state.total_amount - state.pay_gate_fee
 }
 </script>
 
@@ -361,20 +386,6 @@ if (!numeral.locales.hasOwnProperty('vn')) {
           <div class="flex flex-col gap-6">
             <UFormGroup
               class="min-h-14"
-              label="Tổng tiền"
-              name="origin_total_amount"
-            >
-              <label for="">{{ state.origin_total_amount ? numeral(state.origin_total_amount).format() : 0 }}</label>
-            </UFormGroup>
-            <UFormGroup
-              class="min-h-14"
-              label="Thực thu"
-              name="actual_amount"
-            >
-              <label for="">{{ state.actual_amount ? numeral(state.actual_amount).format() : 0 }}</label>
-            </UFormGroup>
-            <UFormGroup
-              class="min-h-14"
               label="Giảm trừ gói cũ"
               name="money_discount_from_old_package"
             >
@@ -388,7 +399,7 @@ if (!numeral.locales.hasOwnProperty('vn')) {
               name="pay_gate"
             >
               <label for="">{{
-                state.pay_gate ? (state.pay_gate === 'Bank_Tranfer' ? 'Chuyển khoản ngân hàng' : state.pay_gate) : '-'
+                state.pay_gate ? (state.pay_gate === 'Bank_Tranfer' ? 'Chuyển khoản' : state.pay_gate) : '-'
               }}</label>
             </UFormGroup>
             <UFormGroup
@@ -403,18 +414,86 @@ if (!numeral.locales.hasOwnProperty('vn')) {
               label="Giảm giá"
               name="discount_value"
             >
-              <label for="">{{ state.discount_value + ' %' }} ({{
-                state.origin_total_amount * state.discount_value / 100
-              }})</label>
+              <label for="">{{ state.discount_value + ' %' }} ({{ (state.origin_total_amount - state.money_discount_from_old_package) * state.discount_value / 100 }})</label>
             </UFormGroup>
             <UFormGroup
               class="min-h-14"
-              label="Doanh thu"
+              name="total_amount"
+            >
+              <template #label>
+                <div class="flex gap-2">
+                  <span>Thực thu</span>
+                  <div>
+                    <UTooltip
+                      text="Số tiền thực tế khách thanh toán (sau khi đã trừ tiền giảm trừ gói cũ, mã giảm giá)"
+                      :ui="{
+                        width: 'max-w-max'
+                      }"
+                    >
+                      <UIcon
+                        name="i-heroicons-information-circle"
+                        class="w-5 h-5"
+                        :popper="{ placement: 'right' }"
+                      />
+                    </UTooltip>
+                  </div>
+                </div>
+              </template>
+              <div class="flex items-center gap-2">
+                <UInput
+                  v-if="canChangePrice && isEditActualMoney"
+                  v-model="state.total_amount"
+                  type="number"
+                  class="w-1/2"
+                  @change="onChangeActualMoney"
+                />
+                <label v-if="!canChangePrice || (canChangePrice && !isEditActualMoney) ">{{ state.total_amount ? numeral(state.total_amount).format() : 0 }}</label>
+                <UTooltip
+                  v-if="orderDetailData.status !== OrderStatus.Cancel && canChangePrice"
+                  text="Chỉnh sửa"
+                >
+                  <UButton
+                    icon="i-heroicons-pencil-square"
+                    size="sm"
+                    color="primary"
+                    square
+                    variant="solid"
+                    :ui="{
+                      variant: {
+                        solid: 'bg-white text-black  hover:bg-[#ccc] disabled:bg-white'
+                      }
+                    }"
+                    @click="onEditActualMoney"
+                  />
+                </UTooltip>
+              </div>
+            </UFormGroup>
+            <UFormGroup
+              class="min-h-14"
               name="revenue"
             >
-              <div class="flex gap-2 items-end">
+              <template #label>
+                <div class="flex gap-2">
+                  <span>Doanh thu</span>
+                  <div>
+                    <UTooltip
+                      text="Số tiền thực tế UNICA nhận được (= thực thu - phí cổng thanh toán)"
+                      :ui="{
+                        width: 'max-w-max'
+                      }"
+                    >
+                      <UIcon
+                        name="i-heroicons-information-circle"
+                        class="w-5 h-5"
+                        :popper="{ placement: 'right' }"
+                      />
+                    </UTooltip>
+                  </div>
+                </div>
+              </template>
+              <div class="flex gap-2  items-center">
                 <UInput
-                  v-if="orderDetailData.status !== OrderStatus.Cancel && isEditRevenue"
+                  v-if="isEditRevenue"
                   v-model="state.revenue"
                   :ui="{
                     wrapper: 'h-full',
@@ -425,10 +504,10 @@ if (!numeral.locales.hasOwnProperty('vn')) {
                   v-if="!isEditRevenue"
                   for=""
                 >
-                  {{ state.revenue ? numeral(orderDetailData.revenue).format() : 0 }}
+                  {{ state.revenue ? numeral(state.revenue).format() : 0 }}
                 </label>
                 <UTooltip
-                  v-if="[ERole.Admin, ERole.Support].some(role => user.roles?.includes(role))"
+                  v-if="[ERole.Admin, ERole.Support].some(role => user.roles?.includes(role)) && orderDetailData.status !== OrderStatus.Cancel"
                   text="Chỉnh sửa"
                 >
                   <UButton
@@ -566,7 +645,33 @@ if (!numeral.locales.hasOwnProperty('vn')) {
               label="Số tháng"
               name="period"
             >
-              <label for="">{{ state.period + ' tháng' }}</label>
+              <div class="flex items-center gap-2">
+                <UInput
+                  v-if="canChangeMonth && isEditMonth"
+                  v-model="state.period"
+                  type="number"
+                  class="w-1/2"
+                />
+                <label v-if="!canChangeMonth || (canChangeMonth && !isEditMonth) ">{{ state.period + ' tháng' }}</label>
+                <UTooltip
+                  v-if="orderDetailData.status !== OrderStatus.Cancel && orderDetailData.status !== OrderStatus.Paid && canChangeMonth"
+                  text="Chỉnh sửa"
+                >
+                  <UButton
+                    icon="i-heroicons-pencil-square"
+                    size="sm"
+                    color="primary"
+                    square
+                    variant="solid"
+                    :ui="{
+                      variant: {
+                        solid: 'bg-white text-black  hover:bg-[#ccc] disabled:bg-white'
+                      }
+                    }"
+                    @click="onEditMonth"
+                  />
+                </UTooltip>
+              </div>
             </UFormGroup>
             <UFormGroup
               class="min-h-14"
