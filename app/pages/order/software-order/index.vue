@@ -74,7 +74,7 @@ const page = ref(1)
 const query = reactive({
   page,
   'sort[_id]': -1,
-  'filter[sale_id]': [ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role)) ? undefined : user.value?._id
+  'filter[sale_id]': [ERole.Admin, ERole.Support, ERole.Accountant].some(role => user.value?.roles.includes(role)) ? undefined : user.value?._id
 })
 const errorMsg = ref()
 

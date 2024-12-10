@@ -33,7 +33,7 @@ if (!orderDetail.value) showError({
   statusMessage: 'Đơn hàng không tồn tại'
 })
 
-if (![ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role)) && orderDetail.value.sale_id !== user.value?._id) {
+if (![ERole.Admin, ERole.Support, ERole.Accountant].some(role => user.value?.roles.includes(role)) && orderDetail.value.sale_id !== user.value?._id) {
   showError({
     statusCode: 403,
     statusMessage: 'Không có quyền truy cập đơn hàng phần mềm'
@@ -425,15 +425,15 @@ const onChangeActualMoney = () => {
                   <span>Thực thu</span>
                   <div>
                     <UTooltip
-                      text="Số tiền thực tế khách thanh toán (sau khi đã trừ tiền giảm trừ gói cũ, mã giảm giá)"
                       :ui="{
                         width: 'max-w-max'
                       }"
+                      text="Số tiền thực tế khách thanh toán (sau khi đã trừ tiền giảm trừ gói cũ, mã giảm giá)"
                     >
                       <UIcon
-                        name="i-heroicons-information-circle"
-                        class="w-5 h-5"
                         :popper="{ placement: 'right' }"
+                        class="w-5 h-5"
+                        name="i-heroicons-information-circle"
                       />
                     </UTooltip>
                   </div>
@@ -443,8 +443,8 @@ const onChangeActualMoney = () => {
                 <UInput
                   v-if="canChangePrice && isEditActualMoney"
                   v-model="state.total_amount"
-                  type="number"
                   class="w-1/2"
+                  type="number"
                   @change="onChangeActualMoney"
                 />
                 <label v-if="!canChangePrice || (canChangePrice && !isEditActualMoney) ">{{ state.total_amount ? numeral(state.total_amount).format() : 0 }}</label>
@@ -453,16 +453,16 @@ const onChangeActualMoney = () => {
                   text="Chỉnh sửa"
                 >
                   <UButton
-                    icon="i-heroicons-pencil-square"
-                    size="sm"
-                    color="primary"
-                    square
-                    variant="solid"
                     :ui="{
                       variant: {
                         solid: 'bg-white text-black  hover:bg-[#ccc] disabled:bg-white'
                       }
                     }"
+                    color="primary"
+                    icon="i-heroicons-pencil-square"
+                    size="sm"
+                    square
+                    variant="solid"
                     @click="onEditActualMoney"
                   />
                 </UTooltip>
@@ -477,15 +477,15 @@ const onChangeActualMoney = () => {
                   <span>Doanh thu</span>
                   <div>
                     <UTooltip
-                      text="Số tiền thực tế UNICA nhận được (= thực thu - phí cổng thanh toán)"
                       :ui="{
                         width: 'max-w-max'
                       }"
+                      text="Số tiền thực tế UNICA nhận được (= thực thu - phí cổng thanh toán)"
                     >
                       <UIcon
-                        name="i-heroicons-information-circle"
-                        class="w-5 h-5"
                         :popper="{ placement: 'right' }"
+                        class="w-5 h-5"
+                        name="i-heroicons-information-circle"
                       />
                     </UTooltip>
                   </div>
@@ -649,8 +649,8 @@ const onChangeActualMoney = () => {
                 <UInput
                   v-if="canChangeMonth && isEditMonth"
                   v-model="state.period"
-                  type="number"
                   class="w-1/2"
+                  type="number"
                 />
                 <label v-if="!canChangeMonth || (canChangeMonth && !isEditMonth) ">{{ state.period + ' tháng' }}</label>
                 <UTooltip
@@ -658,16 +658,16 @@ const onChangeActualMoney = () => {
                   text="Chỉnh sửa"
                 >
                   <UButton
-                    icon="i-heroicons-pencil-square"
-                    size="sm"
-                    color="primary"
-                    square
-                    variant="solid"
                     :ui="{
                       variant: {
                         solid: 'bg-white text-black  hover:bg-[#ccc] disabled:bg-white'
                       }
                     }"
+                    color="primary"
+                    icon="i-heroicons-pencil-square"
+                    size="sm"
+                    square
+                    variant="solid"
                     @click="onEditMonth"
                   />
                 </UTooltip>

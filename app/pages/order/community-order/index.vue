@@ -10,7 +10,7 @@ import { ERole } from '~/enums/role.enum'
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 
-if (![ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role))) {
+if (![ERole.Admin, ERole.Support, ERole.Accountant].some(role => user.value?.roles.includes(role))) {
   showError({
     statusCode: 403,
     statusMessage: 'Không có quyền truy cập đơn hàng cộng đồng'

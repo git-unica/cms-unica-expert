@@ -11,7 +11,7 @@ const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 const orderCode = route?.params?.id
 
-if (![ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role))) {
+if (![ERole.Admin, ERole.Support, ERole.Accountant].some(role => user.value?.roles.includes(role))) {
   showError({
     statusCode: 403,
     statusMessage: 'Không có quyền truy cập đơn hàng cộng đồng'
@@ -287,8 +287,7 @@ const onEditRevenue = () => {
           right: 'w-1/4'
         }"
         title="Đơn hàng"
-      >
-      </UDashboardNavbar>
+      />
 
       <UForm
         :schema="schema"
@@ -342,9 +341,9 @@ const onEditRevenue = () => {
                   <div>
                     <UTooltip text="Số tiền thực tế khách thanh toán">
                       <UIcon
-                        name="i-heroicons-information-circle"
-                        class="w-5 h-5"
                         :popper="{ placement: 'right' }"
+                        class="w-5 h-5"
+                        name="i-heroicons-information-circle"
                       />
                     </UTooltip>
                   </div>
@@ -369,9 +368,9 @@ const onEditRevenue = () => {
                   <div>
                     <UTooltip text="Số tiền thực tế UNICA nhận được">
                       <UIcon
-                        name="i-heroicons-information-circle"
-                        class="w-5 h-5"
                         :popper="{ placement: 'right' }"
+                        class="w-5 h-5"
+                        name="i-heroicons-information-circle"
                       />
                     </UTooltip>
                   </div>

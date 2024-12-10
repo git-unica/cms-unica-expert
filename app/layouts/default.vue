@@ -74,12 +74,12 @@ const links = [{
   children: [{
     label: 'Phần mềm',
     to: '/order/software-order',
-    roles: [ERole.Admin, ERole.Support, ERole.Sale],
+    roles: [ERole.Admin, ERole.Support, ERole.Sale, ERole.Accountant],
     exact: true
   }, {
     label: 'Cộng đồng',
     to: '/order/community-order',
-    roles: [ERole.Admin, ERole.Support]
+    roles: [ERole.Admin, ERole.Support, ERole.Accountant]
   }],
   tooltip: {
     text: 'Đơn hàng',

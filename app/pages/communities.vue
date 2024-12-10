@@ -75,7 +75,7 @@ const query = reactive({
   'filter[type]': filterType,
   'filter[package_code]': filterPackageCode,
   'filter[created_at][between]': filterCreatedAt,
-  'filter[sale_id]': [ERole.Admin, ERole.Support].some(role => user.value?.roles.includes(role)) ? undefined : user.value?._id,
+  'filter[sale_id]': [ERole.Admin, ERole.Support, ERole.Accountant].some(role => user.value?.roles.includes(role)) ? undefined : user.value?._id,
   'w[]': 'owner',
   page
 })
@@ -388,12 +388,14 @@ defineShortcuts({
         </template>
         <template #[`type-data`]="{ row }">
           <USelect
+            v-if="[ERole.Admin, ERole.Support].some(role => user?.roles.includes(role))"
             v-model="row.type"
             :options="typeOptions"
             option-attribute="name"
             placeholder="Kiểu"
             @change="onUpdateType(row, $event)"
           />
+          <span v-else>{{ LabelCommunityType[row.type] }}</span>
         </template>
         <template #[`created_at-data`]="{ row }">
           {{ $dayjs(row.created_at).format("HH:mm DD/MM/YYYY") }}
