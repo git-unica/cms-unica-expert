@@ -3,7 +3,8 @@ import { sub } from 'date-fns'
 import type { Period, Range } from '~/types'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
-
+const notificationStore = useNotificationStore()
+const { newNotificationCount } = storeToRefs(notificationStore)
 const items = [[{
   label: 'New mail',
   icon: 'i-heroicons-paper-airplane',
@@ -16,6 +17,10 @@ const items = [[{
 
 const range = ref<Range>({ start: sub(new Date(), { days: 14 }), end: new Date() })
 const period = ref<Period>('daily')
+
+onMounted(() => {
+  notificationStore.getCountNewNotification()
+})
 </script>
 
 <template>
@@ -34,11 +39,12 @@ const period = ref<Period>('daily')
               @click="isNotificationsSlideoverOpen = true"
             >
               <UChip
+                :show="newNotificationCount>0"
                 color="red"
                 inset
               >
                 <UIcon
-                  class="w-5 h-5"
+                  class="size-6"
                   name="i-heroicons-bell"
                 />
               </UChip>
