@@ -164,3 +164,57 @@ export interface DataNotifySSE {
 
   [key: string]: unknown
 }
+
+export interface INotificationMetadata {
+  community_id?: string
+  community_name?: string
+  community_short_name?: string
+  user_name?: string
+  user_id?: string
+  recipient_id?: string // id người nhận nếu có
+  community_topic_name?: string
+  community_topic_id?: string
+  student_name?: string
+  community_course_name?: string
+  community_course_id?: string
+  community_post_title?: string
+  community_post_id?: string
+  community_avatar?: string
+  community_level_id?: string
+  community_level_name?: string
+  event_name?: string
+  event_id?: string
+  event_link?: string
+  event_landing_page?: boolean
+  avatar?: string
+  order_code?: string
+}
+
+export interface INotification {
+  _id: string
+  content: string
+  creator: {
+    _id: string
+    full_name: string
+    avatar: string
+    type: string
+  }
+  type: (typeof ENotificationType)[keyof typeof ENotificationType]
+  metadata: INotificationMetadata
+  status: string
+  updated_at?: string
+  deleted_at?: string
+  created_at?: string
+
+}
+
+export interface IUserNotification {
+  _id?: string
+  user_id: string
+  notification_id: string
+  read_at?: string
+  updated_at?: string
+  deleted_at?: string
+  created_at?: string
+  notification?: INotification
+}
