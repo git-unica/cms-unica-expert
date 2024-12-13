@@ -2,7 +2,7 @@
 import dayjs from 'dayjs'
 import numeral from 'numeral'
 import { type InferType, number, object, ref as YupRef, string } from 'yup'
-import { ECommunityOrderPaymentStatus, ECommunityOrderStatus, ECommunityOrderType } from '~/enums/community-order.enum'
+import { CommunityOrderTypeText, ECommunityOrderPaymentStatus, ECommunityOrderStatus } from '~/enums/community-order.enum'
 import type { FormSubmitEvent } from '#ui/types'
 import { ERole } from '~/enums/role.enum'
 
@@ -10,7 +10,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 const orderCode = route?.params?.id
-
+const orderType = route?.params?.type
 if (![ERole.Admin, ERole.Support, ERole.Accountant].some(role => user.value?.roles.includes(role))) {
   showError({
     statusCode: 403,
@@ -32,6 +32,13 @@ const { data: orderDetail, refresh } = await useFetch(`/api/v1/community-order/$
     data: []
   })
 })
+
+if (orderType !== CommunityOrderTypeText.get(orderDetail.value.type)) {
+  showError({
+    statusCode: 404,
+    statusMessage: 'Đơn hàng không tồn tại.'
+  })
+}
 
 const page = ref(1)
 const orderDetailData = computed(() => {
@@ -97,7 +104,7 @@ const paymentStatusOptions = [{
 const { copy, copied, isSupported } = useClipboard({ legacy: true })
 const toast = useToast()
 // Danh sách chia hoa hồng
-const listCommissionLink = ref('/order/community-order/' + orderCode + '/list-user-commission')
+const listCommissionLink = ref(`/order/${orderDetail.value.type}/${orderCode}/list-user-commission`)
 
 // lịch sử xử lý đơn hàng
 const queryHistory = reactive({
@@ -551,7 +558,7 @@ const onEditRevenue = () => {
             >
               <label for="">
                 {{
-                  state.type ? (state.type === ECommunityOrderType.JOIN_COMMUNITY_FEE ? 'Membership' : 'Mua khóa học') : ''
+                  state.type ? CommunityOrderTypeText.get(state.type) : ''
                 }}
               </label>
             </UFormGroup>

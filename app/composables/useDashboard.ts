@@ -11,7 +11,7 @@ const _useDashboard = () => {
     'g-i': () => router.push('/inbox'),
     'g-u': () => router.push('/users'),
     'g-c': () => router.push('/communities'),
-    'g-d': () => router.push('/order/software-order'),
+    'g-d': () => router.push('/order/software'),
     'g-t': () => router.push('/topic'),
     'g-p': () => router.push('/post'),
     'g-l': () => router.push('/level'),

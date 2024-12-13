@@ -73,12 +73,12 @@ const links = [{
   icon: 'i-heroicons-clipboard-document-list',
   children: [{
     label: 'Phần mềm',
-    to: '/order/software-order',
+    to: '/order/software',
     roles: [ERole.Admin, ERole.Support, ERole.Sale, ERole.Accountant],
     exact: true
   }, {
     label: 'Cộng đồng',
-    to: '/order/community-order',
+    to: '/order/community',
     roles: [ERole.Admin, ERole.Support, ERole.Accountant]
   }],
   tooltip: {
