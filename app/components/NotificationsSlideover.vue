@@ -51,7 +51,7 @@ const backLinkNotification = async (data: IUserNotification) => {
     })
   }
   if (data.notification?.type === NotificationTypeEnum.NewOrderForAdmin || data.notification?.type === NotificationTypeEnum.SalesApprovesOrders) {
-    return navigateTo('/order/software-order/' + data.notification?.metadata.order_code)
+    return navigateTo('/order/software/' + data.notification?.metadata.order_code)
   }
 }
 watch(isNotificationsSlideoverOpen, async (newValue) => {

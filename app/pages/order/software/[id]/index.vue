@@ -274,7 +274,7 @@ const onApproveOrder = async () => {
 }
 
 // Danh sách chia hoa hồng
-const listCommissionLink = ref('/order/software-order/' + orderCode + '/list-user-commission')
+const listCommissionLink = ref('/order/software/' + orderCode + '/list-user-commission')
 
 // chỉnh sửa doanh thu
 const isEditRevenue = ref(false)
@@ -414,7 +414,9 @@ const onChangeActualMoney = () => {
               label="Giảm giá"
               name="discount_value"
             >
-              <label for="">{{ state.discount_value + ' %' }} ({{ (state.origin_total_amount - state.money_discount_from_old_package) * state.discount_value / 100 }})</label>
+              <label for="">{{ state.discount_value + ' %' }} ({{
+                (state.origin_total_amount - state.money_discount_from_old_package) * state.discount_value / 100
+              }})</label>
             </UFormGroup>
             <UFormGroup
               class="min-h-14"
@@ -447,7 +449,9 @@ const onChangeActualMoney = () => {
                   type="number"
                   @change="onChangeActualMoney"
                 />
-                <label v-if="!canChangePrice || (canChangePrice && !isEditActualMoney) ">{{ state.total_amount ? numeral(state.total_amount).format() : 0 }}</label>
+                <label v-if="!canChangePrice || (canChangePrice && !isEditActualMoney) ">{{
+                  state.total_amount ? numeral(state.total_amount).format() : 0
+                }}</label>
                 <UTooltip
                   v-if="orderDetailData.status !== OrderStatus.Cancel && canChangePrice"
                   text="Chỉnh sửa"
