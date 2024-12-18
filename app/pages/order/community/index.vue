@@ -182,12 +182,12 @@ const closeDeleteOrderModal = () => {
 
 // redirect detail
 const redirectToOrderDetail = async (row: Order) => {
-  await navigateTo({ path: '/order/community/' + row.order_code })
+  await navigateTo({ path: `/order/${CommunityOrderTypeText.get(row.type)}/` + row.order_code })
 }
 
 // redirect to receipt
 const redirectToReceipt = async (row: Order) => {
-  await navigateTo({ path: `/order/${row.type}/${row.order_code}/receipt` })
+  await navigateTo({ path: `/order/${CommunityOrderTypeText.get(row.type)}}/${row.order_code}/receipt` })
 }
 
 // reset
