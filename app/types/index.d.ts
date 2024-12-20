@@ -4,7 +4,8 @@ import type { ECommunityType } from '~/enums/community-type.enum'
 import type { EStatusPost } from '~/enums/status-post.enum'
 import type { OrderStatus } from '~/enums/order-status.enum'
 import type { SSEType } from '~/enums/sse-type.enum'
-import type { ECommunityOrderType } from '~/enums/community-order.enum'
+import type { PaySlipStatus } from '~/enums/pay-slip.enum'
+import {PaySlipDetailStatus} from "~/enums/pay-slip-detail.enum";
 
 export interface User {
   _id: string
@@ -219,4 +220,25 @@ export interface IUserNotification {
   deleted_at?: string
   created_at?: string
   notification?: INotification
+}
+
+export interface PaySlip {
+  _id: string
+  month: number
+  year: number
+  user_count: number
+  pay_slip_code: number
+  total_money_need_paid: number
+  created_at: Date
+  status: (typeof PaySlipStatus)[keyof typeof PaySlipStatus]
+}
+
+export interface PaySlipDetail {
+  _id: string
+  payment_slip_id: string
+  user_id: string
+  total_money_aff: number
+  total_money_owner: number
+  total_money: number
+  status: (typeof PaySlipDetailStatus)[keyof typeof PaySlipDetailStatus]
 }

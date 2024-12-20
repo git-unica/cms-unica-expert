@@ -86,6 +86,16 @@ const links = [{
     shortcuts: ['G', 'D']
   }
 }, {
+  id: 'pay_slip',
+  label: 'Phiếu chi',
+  icon: 'i-heroicons-clipboard-document',
+  to: '/pay-slip',
+  roles: [ERole.Admin, ERole.Accountant],
+  tooltip: {
+    text: 'Phiếu chi',
+    shortcuts: ['G', 'P']
+  }
+}, {
   id: 'settings',
   label: 'Settings',
   to: '/settings',
