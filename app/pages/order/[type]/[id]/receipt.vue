@@ -2,7 +2,7 @@
 import { type InferType, number, object, string, ref as yupRef } from 'yup'
 import numeral from 'numeral'
 import { format } from 'date-fns'
-import type { FormSubmitEvent } from '#ui/types'
+import type { Form, FormSubmitEvent } from '#ui/types'
 import { EReceiptOrderType, EReceiptPay } from '~/enums/receipt-pay-list.enum'
 
 const route = useRoute()
@@ -39,6 +39,7 @@ watch(() => orderDetail.value.receipt, (newReceipt) => {
   }
 })
 
+const formRef = ref<Form<Schema>>()
 const schema = object({
   order_code: string(),
   money_order: number(),
@@ -109,21 +110,24 @@ const onEditRevenue = () => {
   isEditRevenue.value = !isEditRevenue.value
 }
 const onApproveReceipt = async () => {
-  try {
-    await useFetch(`/api/v1/receipt-pay-list/approve/${receiptDetail.value._id}`, {
-      method: 'POST',
-      headers: useRequestHeaders(['cookie']),
-      onResponse({ response }) {
-        if (response.ok) {
-          toast.add({ title: response._data.message, color: 'green' })
-          refresh()
-        } else {
-          toast.add({ title: response._data.message, color: 'red' })
+  const isValidForm = await formRef.value.validate()
+  if (isValidForm) {
+    try {
+      await useFetch(`/api/v1/receipt-pay-list/approve/${receiptDetail.value._id}`, {
+        method: 'POST',
+        headers: useRequestHeaders(['cookie']),
+        onResponse({ response }) {
+          if (response.ok) {
+            toast.add({ title: response._data.message, color: 'green' })
+            refresh()
+          } else {
+            toast.add({ title: response._data.message, color: 'red' })
+          }
         }
-      }
-    })
-  } catch (error) {
-    console.error(error)
+      })
+    } catch (error) {
+      console.error(error)
+    }
   }
 }
 
@@ -145,6 +149,7 @@ watch(date, (newDate) => {
       </UDashboardNavbar>
 
       <UForm
+        ref="formRef"
         :schema="schema"
         :state="state"
         class="space-y-4 px-4 py-4 gap-4"
