@@ -38,8 +38,8 @@ const defaultColumns = [
     label: 'Cộng đồng'
   },
   {
-    key: 'product_name',
-    label: 'Tên sản phẩm'
+    key: 'product_type',
+    label: 'Loại sản phẩm'
   },
   {
     key: 'period',
@@ -51,15 +51,12 @@ const defaultColumns = [
   },
   {
     key: 'ref',
-    label: 'Ref'
+    label: 'Ref',
+    class: 'text-center'
   },
   {
     key: 'total_amount',
     label: 'Tổng tiền'
-  },
-  {
-    key: 'type',
-    label: 'Kiểu đơn'
   },
   {
     key: 'payment',
@@ -536,11 +533,20 @@ const canHandldeReceipt = computed(() => {
             </UTooltip>
           </div>
         </template>
-        <template #product_name-data="{ row }">
-          {{ row.type === ECommunityOrderType.MEMBERSHIP ? 'Phí thành viên' : row.course_name }}
+        <template #product_type-data="{ row }">
+          <div v-if="row.type === ECommunityOrderType.MEMBERSHIP">
+            <p class="font-bold">Membership</p>
+          </div>
+          <div v-if="row.type === ECommunityOrderType.COURSE">
+            <p class="font-bold">Mua khóa học</p>
+            <span class="text-xs">{{ row.course_name }}</span>
+          </div>
+          <div v-if="row.type === ECommunityOrderType.EVENT">
+            <p class="font-bold">Sự kiện</p>
+          </div>
         </template>
         <template #period-data="{ row }">
-          {{ row.type === ECommunityOrderType.MEMBERSHIP ? row.period + ' tháng' : '-' }}
+          <div class="text-center">{{ row.type === ECommunityOrderType.MEMBERSHIP ? row.period + ' tháng' : '-' }}</div>
         </template>
         <template #total_amount-data="{ row }">
           <div class="text-right">
@@ -551,7 +557,7 @@ const canHandldeReceipt = computed(() => {
           {{ dayjs(row.created_at).format('DD/MM/YYYY HH:mm:ss') }}
         </template>
         <template #type-data="{ row }">
-          {{ row.type === 1 ? 'Membership' : (row.type === 2 ? 'Mua khóa học' : '') }}
+          {{ row.type === 1 ? 'Membership' : (row.type === 2 ? 'Mua khóa học' : 'Sự kiện') }}
         </template>
         <template #status-data="{ row }">
           <span
@@ -576,11 +582,8 @@ const canHandldeReceipt = computed(() => {
           >Đã xóa</span>
         </template>
         <template #ref-data="{ row }">
-          {{
-            row.ref !== ''
-              ? row.ref
-              : '-'
-          }}
+          <span v-if="row.ref">{{ row.ref }}</span>
+          <div v-else class="text-center">-</div>
         </template>
         <template #payment-data="{ row }">
           <span
