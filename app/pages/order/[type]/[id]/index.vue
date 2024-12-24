@@ -2,7 +2,12 @@
 import dayjs from 'dayjs'
 import numeral from 'numeral'
 import { type InferType, number, object, ref as YupRef, string } from 'yup'
-import { CommunityOrderTypeText, ECommunityOrderPaymentStatus, ECommunityOrderStatus } from '~/enums/community-order.enum'
+import {
+  CommunityOrderTypeText,
+  ECommunityOrderPaymentStatus,
+  ECommunityOrderStatus,
+  ECommunityOrderType
+} from '~/enums/community-order.enum'
 import type { FormSubmitEvent } from '#ui/types'
 import { ERole } from '~/enums/role.enum'
 
@@ -46,12 +51,23 @@ const orderDetailData = computed(() => {
 })
 
 const state = reactive({
-  buyer_name: orderDetailData.value.buyer !== null ? orderDetailData.value.buyer.full_name : undefined,
-  buyer_email: orderDetailData.value.buyer !== null ? orderDetailData.value.buyer.email : undefined,
-  buyer_phone: orderDetailData.value.buyer !== null ? orderDetailData.value.buyer.phone : undefined,
+  buyer_name: orderDetailData.value.buyer !== null
+    ? orderDetailData.value.buyer.full_name
+    : (orderDetailData.value.event_subscribe && orderDetailData.value.event_subscribe.guest ? orderDetailData.value.event_subscribe.guest.full_name : '-'),
+  buyer_email: orderDetailData.value.buyer !== null
+    ? orderDetailData.value.buyer.email
+    : (orderDetailData.value.event_subscribe && orderDetailData.value.event_subscribe.guest ? orderDetailData.value.event_subscribe.guest.email : '-'),
+  buyer_phone: orderDetailData.value.buyer !== null
+    ? orderDetailData.value.buyer.phone
+    : (orderDetailData.value.event_subscribe && orderDetailData.value.event_subscribe.guest ? orderDetailData.value.event_subscribe.guest.phone : '-'),
   community_name: orderDetailData.value.community !== null ? orderDetailData.value.community.name : undefined,
   course_name: orderDetailData.value.course !== null ? orderDetailData.value.course.title : undefined,
-  period: orderDetailData.value.period !== null ? orderDetailData.value.period : undefined,
+  event_name: orderDetailData.value.event_subscribe && orderDetailData.value.event_subscribe.event
+    ? orderDetailData.value.event_subscribe.event.name
+    : undefined,
+  period: orderDetailData.value.period !== null
+    ? orderDetailData.value.period
+    : undefined,
   total_amount: orderDetailData.value.total_amount,
   created_at: orderDetailData.value.created_at !== null ? orderDetailData.value.created_at : undefined,
   status: orderDetailData.value.status,
@@ -68,7 +84,35 @@ const state = reactive({
 
 watchEffect(() => {
   if (orderDetail.value) {
-    Object.assign(state, orderDetail.value)
+    state.buyer_name = orderDetailData.value.buyer !== null
+      ? orderDetailData.value.buyer.full_name
+      : (orderDetailData.value.event_subscribe && orderDetailData.value.event_subscribe.guest ? orderDetailData.value.event_subscribe.guest.full_name : '-')
+    state.buyer_email = orderDetailData.value.buyer !== null
+      ? orderDetailData.value.buyer.email
+      : (orderDetailData.value.event_subscribe && orderDetailData.value.event_subscribe.guest ? orderDetailData.value.event_subscribe.guest.email : '-')
+    state.buyer_phone = orderDetailData.value.buyer !== null
+      ? orderDetailData.value.buyer.phone
+      : (orderDetailData.value.event_subscribe && orderDetailData.value.event_subscribe.guest ? orderDetailData.value.event_subscribe.guest.phone : '-')
+    state.community_name = orderDetailData.value.community !== null ? orderDetailData.value.community.name : undefined
+    state.course_name = orderDetailData.value.course !== null ? orderDetailData.value.course.title : undefined
+    state.event_name = orderDetailData.value.event_subscribe && orderDetailData.value.event_subscribe.event
+      ? orderDetailData.value.event_subscribe.event.name
+      : undefined
+    state.period = orderDetailData.value.period !== null
+      ? orderDetailData.value.period
+      : undefined
+    state.total_amount = orderDetailData.value.total_amount
+    state.created_at = orderDetailData.value.created_at !== null ? orderDetailData.value.created_at : undefined
+    state.status = orderDetailData.value.status
+    state.payment_status = orderDetailData.value.payment_status
+    state.cancel_reason = orderDetailData.value.cancel_reason !== null ? orderDetailData.value.cancel_reason : undefined
+    state.type = orderDetailData.value.type
+    state.revenue = orderDetailData.value.revenue
+    state.payment_date = orderDetailData.value.payment_date ? orderDetailData.value.payment_date : ''
+    state.short_payment_link = orderDetailData.value.short_payment_link
+    state.note = orderDetailData.value.note ? orderDetailData.value.note : ''
+    state.ref = orderDetailData.value.ref
+    state.sale = orderDetailData.value.sale
   }
 })
 
@@ -160,7 +204,8 @@ const onApproveOrder = async () => {
       content_note: [{
         message: 'Thực hiện hành động duyệt đơn'
       }],
-      status: ECommunityOrderStatus.Paid
+      status: ECommunityOrderStatus.Paid,
+      action_type: 'approve'
     },
     onResponse({ response }) {
       if (response.ok) {
@@ -484,7 +529,7 @@ const onEditRevenue = () => {
               name="payment_status"
             >
               <USelectMenu
-                v-if="orderDetailData.status !== ECommunityOrderStatus.Paid && orderDetailData.status !== ECommunityOrderStatus.Cancel"
+                v-if="orderDetailData.payment_status !== ECommunityOrderPaymentStatus.Paid && orderDetailData.status !== ECommunityOrderStatus.Cancel"
                 v-model="state.payment_status"
                 :options="paymentStatusOptions"
                 :ui="{
@@ -497,7 +542,7 @@ const onEditRevenue = () => {
                 value-attribute="value"
               />
               <span
-                v-if="orderDetailData.status === ECommunityOrderStatus.Paid || orderDetailData.status === ECommunityOrderStatus.Cancel"
+                v-if="(orderDetailData.status === ECommunityOrderStatus.Paid && orderDetailData.payment_status === ECommunityOrderPaymentStatus.Paid) || orderDetailData.status === ECommunityOrderStatus.Cancel"
               >
                 {{
                   paymentStatusOptions.filter(item => item.value === state.payment_status) ? paymentStatusOptions.filter(item => item.value === state.payment_status)[0]['label'] : ''
@@ -542,14 +587,26 @@ const onEditRevenue = () => {
               label="Tên khóa học"
               name="course_name"
             >
-              <label for="">{{ state.course_name ? state.course_name : 'Không có thông tin' }}</label>
+              <label for="">{{ state.course_name ? state.course_name : '-' }}</label>
+            </UFormGroup>
+            <UFormGroup
+              class="min-h-14"
+              label="Tên sự kiện"
+              name="event_name"
+            >
+              <label for="">{{ state.event_name ? state.event_name : '-' }}</label>
             </UFormGroup>
             <UFormGroup
               class="min-h-14"
               label="Thời hạn"
               name="period"
             >
-              <label for="">{{ state.period + ' tháng' }}</label>
+              <p v-if="state.type === ECommunityOrderType.MEMBERSHIP || state.type === ECommunityOrderType.COURSE">
+                {{ state.period + ' tháng' }}
+              </p>
+              <p v-else-if="state.type === ECommunityOrderType.EVENT && orderDetailData.event_subscribe && orderDetailData.event_subscribe.event">
+                {{ dayjs(orderDetailData.event_subscribe.event.start_date).format('DD/MM/YYYY') + ' - ' + dayjs(orderDetailData.event_subscribe.event.end_date).format('DD/MM/YYYY') }}
+              </p>
             </UFormGroup>
             <UFormGroup
               class="min-h-14"
@@ -590,7 +647,7 @@ const onEditRevenue = () => {
             Lưu
           </UButton>
           <UButton
-            v-if="orderDetailData.status !== ECommunityOrderStatus.Paid && orderDetailData.status !== ECommunityOrderStatus.Cancel"
+            v-if="orderDetailData.status !== ECommunityOrderStatus.Cancel && orderDetailData.payment_status !== ECommunityOrderPaymentStatus.Paid"
             :ui="{
               padding: {
                 sm: 'px-9'
@@ -605,7 +662,7 @@ const onEditRevenue = () => {
             Duyệt đơn
           </UButton>
           <span
-            v-if="orderDetailData.status === ECommunityOrderStatus.Paid"
+            v-if="orderDetailData.status === ECommunityOrderStatus.Paid && orderDetailData.payment_status === ECommunityOrderPaymentStatus.Paid"
             class="text-green-500 flex justify-center items-center"
           >Đã duyệt</span>
           <span

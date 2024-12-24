@@ -31,7 +31,7 @@ const defaultColumns = [
     label: '#',
     hidden: true
   }, {
-    key: 'buyer_name',
+    key: 'buyer_info',
     label: 'Người mua'
   }, {
     key: 'community_name',
@@ -519,6 +519,44 @@ const canHandldeReceipt = computed(() => {
         class="w-full"
         sort-mode="manual"
       >
+        <template #buyer_info-data="{ row }">
+          <div v-if="row.type === ECommunityOrderType.MEMBERSHIP || row.type === ECommunityOrderType.COURSE || !row.type">
+            <div v-if="Object.keys(row.buyer_info).length > 0">
+              <p class="text-[#6B7280] font-bold">
+                {{ row.buyer_info.full_name ? row.buyer_info.full_name : '' }}
+              </p>
+              <p class="text-xs">
+                {{ row.buyer_info.email ? row.buyer_info.email : '' }}
+              </p>
+              <p class="text-xs">
+                {{ row.buyer_info.phone ? row.buyer_info.phone : '' }}
+              </p>
+            </div>
+            <div v-else>
+              -
+            </div>
+          </div>
+          <div v-else-if="row.type === ECommunityOrderType.EVENT || row.event_info">
+            <div
+              v-if="Object.keys(row.buyer_info).length === 0
+                && (row.event_subscribe_info.guest && row.event_subscribe_info.guest.full_name === ''
+                  && row.event_subscribe_info.guest.email === '' && row.event_subscribe_info.guest.phone === '')"
+            >
+              -
+            </div>
+            <div v-else>
+              <p class="text-[#6B7280] font-bold">
+                {{ row.buyer_info.full_name ? row.buyer_info.full_name : (row.event_subscribe_info.guest ? row.event_subscribe_info.guest.full_name : '') }}
+              </p>
+              <p class="text-xs">
+                {{ row.buyer_info.email ? row.buyer_info.email : (row.event_subscribe_info.guest ? row.event_subscribe_info.guest.email : '') }}
+              </p>
+              <p class="text-xs">
+                {{ row.buyer_info.phone ? row.buyer_info.phone : (row.event_subscribe_info.guest ? row.event_subscribe_info.guest.phone : '') }}
+              </p>
+            </div>
+          </div>
+        </template>
         <template #order_code-data="{ row }">
           <div class="text-center font-bold">
             <UTooltip
@@ -543,6 +581,7 @@ const canHandldeReceipt = computed(() => {
           </div>
           <div v-if="row.type === ECommunityOrderType.EVENT">
             <p class="font-bold">Sự kiện</p>
+            <span class="text-xs">{{ row.event_info ? row.event_info.name : '' }}</span>
           </div>
         </template>
         <template #period-data="{ row }">
