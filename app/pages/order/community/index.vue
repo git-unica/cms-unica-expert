@@ -98,7 +98,7 @@ const statusOptions = [{
   label: 'Chờ xử lý'
 }, {
   value: ECommunityOrderStatus.Paid,
-  label: 'Thành công'
+  label: 'Kích hoạt'
 }, {
   value: ECommunityOrderStatus.Cancel,
   label: 'Đã hủy'
@@ -558,7 +558,7 @@ const canHandldeReceipt = computed(() => {
           </div>
         </template>
         <template #order_code-data="{ row }">
-          <div class="text-center font-bold">
+          <div class="text-center flex flex-col justify-center items-center">
             <UTooltip
               :popper="{ placement: 'right' }"
               text="Chi tiết đơn"
@@ -566,8 +566,20 @@ const canHandldeReceipt = computed(() => {
               <ULink
                 :to="`/order/${CommunityOrderTypeText.get(row.type)}/${row.order_code}`"
               >
-                <span class="hover:text-[#ccc]">{{ row.order_code }}</span>
+                <span class="hover:text-[#ccc] font-bold">{{ row.order_code }}</span><br>
               </ULink>
+            </UTooltip>
+            <UTooltip
+              v-if="row.receipt_info && Object.keys(row.receipt_info).length > 0"
+              :popper="{ placement: 'right' }"
+              class="cursor-pointer"
+              text="Mã phiếu thu"
+            >
+              <span
+                class="text-xs text-gray-500"
+              >
+                {{ row.receipt_info.receipt_code }}
+              </span>
             </UTooltip>
           </div>
         </template>
@@ -606,7 +618,7 @@ const canHandldeReceipt = computed(() => {
           <span
             v-if="row.status === ECommunityOrderStatus.Paid"
             class="text-green-500"
-          >Thành công</span>
+          >Kích hoạt</span>
           <span
             v-if="row.status === ECommunityOrderStatus.Cancel"
             class="text-slate-400"

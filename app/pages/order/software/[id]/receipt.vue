@@ -75,7 +75,6 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
     revenue: event.data.revenue,
     note: event.data.note,
     order_type: EReceiptOrderType.SOFTWARE,
-    action_type: receiptDetail.value ? 'update' : 'create',
     received_money_date: event.data.received_money_date
   }
   if (event.data.pay_gate === undefined) {
@@ -84,8 +83,14 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
     })
   }
 
+  if (receiptDetail.value && Object.keys(receiptDetail.value).length > 0) {
+    Object.assign(dataPayload, {
+      receipt_id: receiptDetail.value.id
+    })
+  }
+
   try {
-    await useFetch(`/api/v1/receipt-pay-list`, {
+    await useFetch(`/api/v1/receipt-pay-list/approve`, {
       method: 'POST',
       headers: useRequestHeaders(['cookie']),
       body: dataPayload,
@@ -94,34 +99,12 @@ const onSubmit = async (event: FormSubmitEvent<Schema>) => {
           toast.add({ title: response._data.message, color: 'green' })
           refresh()
         } else {
-          toast.add({ title: 'Có lỗi khi lưu dữ liệu', color: 'red' })
+          toast.add({ title: response._data.message, color: 'red' })
         }
       }
     })
   } catch (error) {
     console.error(error)
-  }
-}
-
-const onApproveReceipt = async () => {
-  const isValidForm = await formRef.value.validate()
-  if (isValidForm) {
-    try {
-      await useFetch(`/api/v1/receipt-pay-list/approve/${receiptDetail.value._id}`, {
-        method: 'POST',
-        headers: useRequestHeaders(['cookie']),
-        onResponse({ response }) {
-          if (response.ok) {
-            toast.add({ title: response._data.message, color: 'green' })
-            refresh()
-          } else {
-            toast.add({ title: 'Có lỗi khi duyệt phiếu thu', color: 'red' })
-          }
-        }
-      })
-    } catch (error) {
-      console.error(error)
-    }
   }
 }
 
@@ -166,7 +149,7 @@ watch(state, (newState) => {
     <UDashboardPanel grow>
       <UDashboardNavbar>
         <template #title>
-          {{ receiptDetail === null ? 'Tạo phiếu thu' : (receiptDetail.status === EReceiptPay.Processing ? 'Chỉnh sửa phiếu thu' : 'Chi tiết phiếu thu') }}
+          Phiếu thu
         </template>
       </UDashboardNavbar>
 
@@ -326,16 +309,9 @@ watch(state, (newState) => {
         </UFormGroup>
         <div class="flex gap-2 px-4 py-4">
           <UButton
-            v-if="receiptDetail === null || (receiptDetail.status === EReceiptPay.Processing)"
+            v-if="!receiptDetail || (receiptDetail && receiptDetail.status === EReceiptPay.Processing)"
             type="submit"
-          >
-            Lưu thay đổi
-          </UButton>
-          <UButton
-            v-if="receiptDetail !== null && receiptDetail.status === EReceiptPay.Processing"
-            type="button"
             color="green"
-            @click="onApproveReceipt"
           >
             Duyệt phiếu thu
           </UButton>

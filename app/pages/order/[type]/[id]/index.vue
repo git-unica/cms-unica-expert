@@ -442,7 +442,7 @@ const onEditRevenue = () => {
                   v-if="!isEditRevenue"
                   for=""
                 >{{ state.revenue ? numeral(orderDetailData.revenue).format() : 0 }}</label>
-                <UTooltip text="Chỉnh sửa">
+                <UTooltip v-if="orderDetailData.receipt && Object.keys(orderDetailData.receipt).length === 0" text="Chỉnh sửa">
                   <UButton
                     :ui="{
                       variant: {
@@ -519,6 +519,7 @@ const onEditRevenue = () => {
                 }"
                 option-attribute="label"
                 value-attribute="value"
+                :disabled="orderDetailData.receipt && Object.keys(orderDetailData.receipt).length > 0"
               />
               <span v-if="orderDetailData.status === ECommunityOrderStatus.Paid">Thành công</span>
               <span v-if="orderDetailData.status === ECommunityOrderStatus.Cancel">Đã hủy</span>
@@ -540,6 +541,7 @@ const onEditRevenue = () => {
                 }"
                 option-attribute="label"
                 value-attribute="value"
+                :disabled="orderDetailData.receipt && Object.keys(orderDetailData.receipt).length > 0"
               />
               <span
                 v-if="(orderDetailData.status === ECommunityOrderStatus.Paid && orderDetailData.payment_status === ECommunityOrderPaymentStatus.Paid) || orderDetailData.status === ECommunityOrderStatus.Cancel"
@@ -632,11 +634,12 @@ const onEditRevenue = () => {
           <UTextarea
             v-model="state.note"
             placeholder="Ghi chú"
+            :disabled="orderDetailData.receipt && Object.keys(orderDetailData.receipt).length > 0"
           />
         </UFormGroup>
         <div class="px-4 py-4 flex gap-2">
           <UButton
-            v-if="orderDetailData.status !== ECommunityOrderStatus.Cancel"
+            v-if="orderDetailData.status !== ECommunityOrderStatus.Cancel && (!orderDetailData.receipt || (orderDetailData.receipt && Object.keys(orderDetailData.receipt).length === 0))"
             :ui="{
               padding: {
                 sm: 'px-9'
