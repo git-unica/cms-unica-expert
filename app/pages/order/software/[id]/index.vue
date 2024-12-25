@@ -453,7 +453,7 @@ const onChangeActualMoney = () => {
                   state.total_amount ? numeral(state.total_amount).format() : 0
                 }}</label>
                 <UTooltip
-                  v-if="orderDetailData.status !== OrderStatus.Cancel && canChangePrice"
+                  v-if="orderDetailData.status !== OrderStatus.Cancel && canChangePrice && (orderDetailData.receipt && Object.keys(orderDetailData.receipt).length === 0)"
                   text="Chỉnh sửa"
                 >
                   <UButton
@@ -511,7 +511,7 @@ const onChangeActualMoney = () => {
                   {{ state.revenue ? numeral(state.revenue).format() : 0 }}
                 </label>
                 <UTooltip
-                  v-if="[ERole.Admin, ERole.Support].some(role => user.roles?.includes(role)) && orderDetailData.status !== OrderStatus.Cancel"
+                  v-if="[ERole.Admin, ERole.Support].some(role => user.roles?.includes(role)) && orderDetailData.status !== OrderStatus.Cancel && (orderDetailData.receipt && Object.keys(orderDetailData.receipt).length === 0)"
                   text="Chỉnh sửa"
                 >
                   <UButton
@@ -589,6 +589,7 @@ const onChangeActualMoney = () => {
                 }"
                 option-attribute="label"
                 value-attribute="value"
+                :disabled="orderDetailData.receipt && Object.keys(orderDetailData.receipt).length > 0"
               />
               <span v-if="orderDetailData.status === OrderStatus.Paid">Thành công</span>
               <span v-if="orderDetailData.status === OrderStatus.Cancel">Đã hủy</span>
@@ -610,6 +611,7 @@ const onChangeActualMoney = () => {
                 }"
                 option-attribute="label"
                 value-attribute="value"
+                :disabled="orderDetailData.receipt && Object.keys(orderDetailData.receipt).length > 0"
               />
               <span v-if="orderDetailData.status === OrderStatus.Paid || orderDetailData.status === OrderStatus.Cancel">
                 {{
@@ -658,7 +660,7 @@ const onChangeActualMoney = () => {
                 />
                 <label v-if="!canChangeMonth || (canChangeMonth && !isEditMonth) ">{{ state.period + ' tháng' }}</label>
                 <UTooltip
-                  v-if="orderDetailData.status !== OrderStatus.Cancel && orderDetailData.status !== OrderStatus.Paid && canChangeMonth"
+                  v-if="orderDetailData.status !== OrderStatus.Cancel && orderDetailData.status !== OrderStatus.Paid && canChangeMonth && (orderDetailData.receipt && Object.keys(orderDetailData.receipt).length === 0)"
                   text="Chỉnh sửa"
                 >
                   <UButton
@@ -703,11 +705,12 @@ const onChangeActualMoney = () => {
           <UTextarea
             v-model="state.note"
             placeholder="Ghi chú"
+            :disabled="orderDetailData.receipt && Object.keys(orderDetailData.receipt).length > 0"
           />
         </UFormGroup>
         <div class="px-4 py-4 flex gap-2">
           <UButton
-            v-if="orderDetailData.status !== OrderStatus.Cancel"
+            v-if="orderDetailData.status !== OrderStatus.Cancel && (!orderDetailData.receipt || (orderDetailData.receipt && Object.keys(orderDetailData.receipt).length === 0))"
             :ui="{
               padding: {
                 sm: 'px-9'
