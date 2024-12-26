@@ -216,7 +216,7 @@ const statusOptions = [{
   label: 'Chờ xử lý'
 }, {
   value: OrderStatus.Paid,
-  label: 'Thành công'
+  label: 'Kích hoạt'
 }, {
   value: OrderStatus.Cancel,
   label: 'Đã hủy'
@@ -617,7 +617,7 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           </UTooltip>
         </template>
         <template #order_code-data="{ row }">
-          <div class="text-center font-bold">
+          <div class="text-center flex flex-col justify-center items-center">
             <UTooltip
               :popper="{ placement: 'right' }"
               text="Chi tiết đơn"
@@ -625,8 +625,20 @@ if (!Object.keys(numeral.locales).includes('vn')) {
               <ULink
                 :to="'/order/software/' + row.order_code"
               >
-                <span class="hover:text-[#ccc]">{{ row.order_code }}</span>
+                <span class="hover:text-[#ccc] font-bold">{{ row.order_code }}</span>
               </ULink>
+            </UTooltip>
+            <UTooltip
+              v-if="row.receipt_info && Object.keys(row.receipt_info).length > 0"
+              :popper="{ placement: 'right' }"
+              class="cursor-pointer"
+              text="Mã phiếu thu"
+            >
+              <span
+                class="text-xs text-gray-500"
+              >
+                {{ row.receipt_info.receipt_code }}
+              </span>
             </UTooltip>
           </div>
         </template>
@@ -652,7 +664,7 @@ if (!Object.keys(numeral.locales).includes('vn')) {
             v-if="row.status === OrderStatus.Paid"
             class="text-green-500"
           >
-            Thành công
+            Kích hoạt
           </span>
           <span
             v-if="row.status === OrderStatus.Cancel"
@@ -871,7 +883,7 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           </template>
           <p v-if="statusType === 'paid'">
             Bạn có chắc chắn muốn chuyển trạng thái của đơn hàng này thành
-            <strong>Thành công</strong> không ?
+            <strong>Kích hoạt</strong> không ?
           </p>
           <UForm
             v-if="statusType === 'cancel'"
