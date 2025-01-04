@@ -5,7 +5,7 @@ import vi from 'date-fns/locale/vi'
 import { LabelCommunityStatus } from '~/enums/community-status.enum'
 import type { ECommunityType } from '~/enums/community-type.enum'
 import { LabelCommunityType } from '~/enums/community-type.enum'
-import type { Community, IResponsePagination } from '~/types'
+import type { Community, IResponsePagination, User } from '~/types'
 import { ERole } from '~/enums/role.enum'
 import { LabelCommunityPackageCode } from '~/enums/community-package-code.enum'
 
@@ -35,6 +35,10 @@ const defaultColumns = [
   {
     key: 'owner',
     label: 'Owner'
+  },
+  {
+    key: 'sale',
+    label: 'Sale'
   },
   {
     key: 'total_member',
@@ -76,7 +80,7 @@ const query = reactive({
   'filter[package_code]': filterPackageCode,
   'filter[created_at][between]': filterCreatedAt,
   'filter[sale_id]': [ERole.Admin, ERole.Support, ERole.Accountant].some(role => user.value?.roles.includes(role)) ? undefined : user.value?._id,
-  'w[]': 'owner',
+  'w[]': ['owner', 'sale'],
   page
 })
 
@@ -243,6 +247,92 @@ defineShortcuts({
     input.value?.input?.focus()
   }
 })
+
+const errorMsg = ref()
+// chi tiết vai trò
+const queryRole = reactive({
+  keyword: 'sale'
+})
+const {
+  data: roles
+} = await useFetch('/api/v1/admin/roles', {
+  query: queryRole,
+  headers: useRequestHeaders(['cookie']),
+  lazy: true,
+  default: () => ({
+    data: []
+  }),
+  onResponseError({ response }) {
+    errorMsg.value = response._data?.message ?? ''
+  }
+})
+
+const rolesComputed = computed(() => {
+  return roles?.value?.data.map(role => role._id)
+})
+
+// modal chọn sale
+const isGetAll = ref(true)
+const selectedSale = ref('')
+const queryUser = reactive({
+  page,
+  'sort[_id]': -1,
+  'filter[roles][]': rolesComputed,
+  isGetAll
+})
+
+const {
+  data: userSales
+} = await useFetch('/api/v1/users', {
+  query: queryUser,
+  headers: useRequestHeaders(['cookie']),
+  lazy: true,
+  default: () => ({
+    data: []
+  }),
+  onResponseError({ response }) {
+    errorMsg.value = response._data?.message ?? ''
+  }
+})
+
+const userData = computed(() => {
+  return userSales.value
+    ? userSales.value.map((user: User) => {
+        return {
+          label: user.full_name,
+          value: user._id
+        }
+      })
+    : []
+})
+
+const selectedCommunityId = ref()
+const isOpenChooseSaleModal = ref(false)
+const onChooseSale = async (communityId: string) => {
+  isOpenChooseSaleModal.value = true
+  selectedCommunityId.value = communityId
+}
+
+const onAgreeChooseSale = async () => {
+  await useFetch(`/api/v1/community/assign-sale`, {
+    method: 'POST',
+    headers: useRequestHeaders(['cookie']),
+    body: {
+      community_id: selectedCommunityId.value,
+      sale_id: selectedSale.value
+    },
+    onResponse({ response }) {
+      if (response.ok) {
+        isOpenChooseSaleModal.value = false
+        toast.add({ title: response._data.message, color: 'green' })
+        refresh()
+      } else {
+        isOpenChooseSaleModal.value = false
+        toast.add({ title: response._data.message, color: 'red' })
+      }
+    }
+  })
+}
 </script>
 
 <template>
@@ -361,6 +451,26 @@ defineShortcuts({
             >{{ row.owner.email }}</a>
           </p>
         </template>
+        <template #[`sale-data`]="{ row }">
+          <div v-if="row.saleInfo">
+            <p>{{ row.saleInfo.full_name }}</p>
+            <p>
+              <a
+                :href="`tel:${row.saleInfo.phone}`"
+                class="text-blue-500"
+              >{{ row.saleInfo.phone }}</a>
+            </p>
+            <p>
+              <a
+                :href="`mailto:${row.saleInfo.email}`"
+                class="text-blue-500"
+              >{{ row.saleInfo.email }}</a>
+            </p>
+          </div>
+          <div v-else>
+            -
+          </div>
+        </template>
         <template #[`name-data`]="{ row }">
           <div class="flex items-center gap-3">
             <UAvatar
@@ -402,6 +512,15 @@ defineShortcuts({
         </template>
         <template #[`action-data`]="{ row }">
           <div class="flex gap-1">
+            <UTooltip text="Gán sale">
+              <UButton
+                :ui="{ rounded: 'rounded-full' }"
+                icon="i-heroicons-user-plus"
+                target="_blank"
+                color="gray"
+                @click="onChooseSale(row._id)"
+              />
+            </UTooltip>
             <UTooltip text="Truy cập cộng đồng">
               <UButton
                 :ui="{ rounded: 'rounded-full' }"
@@ -464,5 +583,63 @@ defineShortcuts({
         />
       </div>
     </UDashboardPanel>
+
+    <!-- modal chọn sale -->
+    <UModal
+      v-model="isOpenChooseSaleModal"
+      :ui="{ container: 'items-start sm:items-start' }"
+      prevent-close
+    >
+      <UCard
+        :ui="{
+        ring: '',
+        divide: 'divide-y divide-gray-100 dark:divide-gray-800'
+      }"
+      >
+        <template #header>
+          <div class="flex justify-between">
+            <h3 class="font-bold text-2xl">
+              Gán sale
+            </h3>
+            <UButton
+              class="-my-1"
+              color="gray"
+              icon="i-heroicons-x-mark-20-solid"
+              variant="ghost"
+              @click="isOpenChooseSaleModal = false"
+            />
+          </div>
+        </template>
+        <div class="flex flex-col w-full gap-2">
+          <p>Danh sách sales</p>
+          <USelectMenu
+            v-model="selectedSale"
+            :options="userData"
+            class="w-full"
+            clear-search-on-close
+            option-attribute="label"
+            placeholder="--- Chọn sale ---"
+            searchable
+            searchable-placeholder="Tìm kiếm sale..."
+            value-attribute="value"
+          >
+            <template #option-empty="{ query }">
+              Không tìm thấy sale <q>{{ query }}</q>
+            </template>
+          </USelectMenu>
+        </div>
+        <template #footer>
+          <div class="flex gap-2 justify-end">
+            <UButton
+              :ui="{ padding: { sm: 'px-5 py-2' } }"
+              color="primary"
+              label="Đồng ý"
+              @click="onAgreeChooseSale"
+            />
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+    <!---->
   </UDashboardPage>
 </template>
