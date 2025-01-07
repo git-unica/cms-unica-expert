@@ -58,6 +58,8 @@ const columns = computed(() =>
   defaultColumns.filter(column => selectedColumns.value.includes(column))
 )
 
+const dataReady = ref(false)
+const checkIfHasPaySlipThisMonth = ref(false)
 const {
   data: paySlips,
   status,
@@ -80,6 +82,15 @@ const {
   }),
   onResponseError({ response }) {
     errorMsg.value = response._data?.message ?? ''
+  },
+  onResponse({ response }) {
+    dataReady.value = true
+    const returnData = response._data.data
+    if (returnData.length > 0) {
+      if (returnData[0].month === (dayjs().month() + 1) && returnData[0].year === dayjs().year()) {
+        checkIfHasPaySlipThisMonth.value = true
+      }
+    }
   }
 })
 // redirect detail
@@ -122,6 +133,32 @@ if (!Object.keys(numeral.locales).includes('vn')) {
     }
   })
 }
+
+const labelMail = ref('Gửi email thanh toán tháng ' + (dayjs().month() + 1) + '/' + dayjs().year())
+const isOpenModalSendMail = ref(false)
+const toast = useToast()
+const openSendMailModal = () => {
+  isOpenModalSendMail.value = true
+}
+const sendMailPayment = async () => {
+  await useFetch(`/api/v1/pay-slip/send-mail-payment`, {
+    method: 'GET',
+    query: {
+      month: (dayjs().month() + 1),
+      year: dayjs().year()
+    },
+    headers: useRequestHeaders(['cookie']),
+    onResponse({ response }) {
+      if (response.ok) {
+        isOpenModalSendMail.value = false
+        toast.add({ title: response._data.message, color: 'green' })
+      } else {
+        isOpenModalSendMail.value = false
+        toast.add({ title: response._data.message, color: 'red' })
+      }
+    }
+  })
+}
 </script>
 
 <template>
@@ -133,6 +170,21 @@ if (!Object.keys(numeral.locales).includes('vn')) {
       />
 
       <UDashboardToolbar>
+        <template #left>
+          <UButton
+            v-if="dataReady && checkIfHasPaySlipThisMonth"
+            :label="labelMail"
+            color="primary"
+            @click="openSendMailModal"
+          >
+            <template #leading>
+              <UIcon
+                name="i-heroicons-envelope"
+                class="w-5 h-5"
+              />
+            </template>
+          </UButton>
+        </template>
         <template #right>
           <USelectMenu
             v-model="selectedColumns"
@@ -156,39 +208,39 @@ if (!Object.keys(numeral.locales).includes('vn')) {
         class="w-full"
         sort-mode="manual"
       >
-        <template #pay_slip_code-data="{ row }">
+        <template #[`pay_slip_code-data`]="{ row }">
           <div class="text-center">
             {{ row.pay_slip_code }}
           </div>
         </template>
-        <template #time-data="{ row }">
+        <template #[`time-data`]="{ row }">
           <div class="text-center">
             {{ row.month + '/' + row.year }}
           </div>
         </template>
-        <template #user_count-data="{ row }">
+        <template #[`user_count-data`]="{ row }">
           <div class="text-center">
             <UTooltip text="Danh sách người được chia tiền">
               <span @click="redirectToDetail(row)" class="text-black font-medium cursor-pointer hover:text-[#ccc]">{{ row.user_count }}</span>
             </UTooltip>
           </div>
         </template>
-        <template #total_money_need_paid-data="{ row }">
+        <template #[`total_money_need_paid-data`]="{ row }">
           <div class="text-center">
             {{ row.total_money_need_paid ? numeral(row.total_money_need_paid).format() : 0 }}
           </div>
         </template>
-        <template #created_at-data="{ row }">
+        <template #[`created_at-data`]="{ row }">
           <div class="text-center">
             {{ row.created_at ? dayjs(row.created_at).format('DD/MM/YYYY HH:mm:ss') : '-' }}
           </div>
         </template>
-        <template #approved_time-data="{ row }">
+        <template #[`approved_time-data`]="{ row }">
           <div class="text-center">
             {{ row.approved_time ? dayjs(row.approved_time).format('DD/MM/YYYY HH:mm:ss') : '-' }}
           </div>
         </template>
-        <template #status-data="{ row }">
+        <template #[`status-data`]="{ row }">
           <div
             v-if="row.status === 1"
             class="text-center"
@@ -234,5 +286,35 @@ if (!Object.keys(numeral.locales).includes('vn')) {
         />
       </div>
     </UDashboardPanel>
+    <UModal v-model="isOpenModalSendMail">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <template #header>
+          <h2 class="text-2xl font-bold">
+            Gửi email thanh toán
+          </h2>
+        </template>
+
+        <p>Bạn có chắc chắn muốn gửi email thanh toán tháng <strong>{{ (dayjs().month() + 1) + '/' + dayjs().year() }}</strong> không ?</p>
+
+        <template #footer>
+          <div class="flex gap-2 justify-end">
+            <UButton
+              color="primary"
+              size="lg"
+              @click="sendMailPayment"
+            >
+              Gửi
+            </UButton>
+            <UButton
+              color="gray"
+              size="lg"
+              @click="isOpenModalSendMail = false"
+            >
+              Thoát
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </UDashboardPage>
 </template>
