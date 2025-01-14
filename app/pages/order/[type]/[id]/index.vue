@@ -150,6 +150,9 @@ const toast = useToast()
 // Danh sách chia hoa hồng
 const listCommissionLink = ref(`/order/${orderDetail.value.type}/${orderCode}/list-user-commission`)
 
+// chi tiết phiếu chi
+const receiptLink = ref(`/order/${orderDetail.value.type}/${orderCode}/receipt`)
+
 // lịch sử xử lý đơn hàng
 const queryHistory = reactive({
   page,
@@ -674,17 +677,32 @@ const onEditRevenue = () => {
           >Đã hủy</span>
         </div>
       </UForm>
-      <ULink
-        :to="listCommissionLink"
-        class="ml-8 mb-8 text-green-500 max-w-[235px]"
-      >
-        <span class="flex items-center gap-2 border border-solid border-slate-500 px-3 py-2 rounded-lg">
-          Danh sách chia hoa hồng <UIcon
-            class="w-5 h-5"
-            name="i-heroicons-arrow-right"
-          />
-        </span>
-      </ULink>
+      <div class="pl-8 mb-4 flex gap-4">
+        <ULink
+          :to="listCommissionLink"
+          class="text-green-500"
+        >
+          <span class="flex items-center gap-2 border border-solid border-slate-500 px-3 py-2 rounded-lg">
+            Danh sách chia hoa hồng
+            <UIcon
+              class="w-5 h-5"
+              name="i-heroicons-arrow-right"
+            />
+          </span>
+        </ULink>
+        <ULink
+          :to="receiptLink"
+          class="text-orange-500"
+        >
+          <span class="flex items-center gap-2 border border-solid border-slate-500 px-3 py-2 rounded-lg">
+            Phiếu chi
+            <UIcon
+              class="w-5 h-5"
+              name="i-heroicons-arrow-right"
+            />
+          </span>
+        </ULink>
+      </div>
       <div class="px-8">
         <p>Lịch sử xử lý đơn hàng</p>
         <UTable
