@@ -20,11 +20,6 @@ const defaultColumns = [
     class: 'text-center'
   },
   {
-    key: 'user_count',
-    label: 'Số người được chi',
-    class: 'text-center'
-  },
-  {
     key: 'total_money_need_paid',
     label: 'Số tiền cần chi',
     class: 'text-center'
@@ -42,6 +37,11 @@ const defaultColumns = [
   {
     key: 'status',
     label: 'Trạng thái',
+    class: 'text-center'
+  },
+  {
+    key: 'action',
+    label: 'Hành động',
     class: 'text-center'
   }
 ]
@@ -93,10 +93,6 @@ const {
     }
   }
 })
-// redirect detail
-const redirectToDetail = async (row: PaySlip) => {
-  await navigateTo({ path: '/pay-slip/' + row.pay_slip_code })
-}
 
 watch(page, (newPage) => {
   if (newPage) {
@@ -152,8 +148,38 @@ const sendMailPayment = async () => {
       if (response.ok) {
         isOpenModalSendMail.value = false
         toast.add({ title: response._data.message, color: 'green' })
+        refresh()
       } else {
         isOpenModalSendMail.value = false
+        toast.add({ title: response._data.message, color: 'red' })
+      }
+    }
+  })
+}
+const redirectToPaySlipDetail = async (row: PaySlip) => {
+  await navigateTo({ path: '/pay-slip/' + row.pay_slip_code })
+}
+
+const isOpenApprovePaySlipModal = ref(false)
+const selectedPaySlipId = ref()
+const selectedPaySlipCode = ref()
+const onOpenApprovePaySlipModal = (row: PaySlip) => {
+  selectedPaySlipId.value = row._id
+  selectedPaySlipCode.value = row.pay_slip_code
+  isOpenApprovePaySlipModal.value = true
+}
+
+const onApprovePaySlip = async () => {
+  await useFetch(`/api/v1/pay-slip/${selectedPaySlipId.value}/approve`, {
+    method: 'PATCH',
+    headers: useRequestHeaders(['cookie']),
+    onResponse({ response }) {
+      if (response.ok) {
+        isOpenApprovePaySlipModal.value = false
+        toast.add({ title: response._data.message, color: 'green' })
+        refresh()
+      } else {
+        isOpenApprovePaySlipModal.value = false
         toast.add({ title: response._data.message, color: 'red' })
       }
     }
@@ -218,13 +244,6 @@ const sendMailPayment = async () => {
             {{ row.month + '/' + row.year }}
           </div>
         </template>
-        <template #[`user_count-data`]="{ row }">
-          <div class="text-center">
-            <UTooltip text="Danh sách người được chia tiền">
-              <span @click="redirectToDetail(row)" class="text-black font-medium cursor-pointer hover:text-[#ccc]">{{ row.user_count }}</span>
-            </UTooltip>
-          </div>
-        </template>
         <template #[`total_money_need_paid-data`]="{ row }">
           <div class="text-center">
             {{ row.total_money_need_paid ? numeral(row.total_money_need_paid).format() : 0 }}
@@ -264,6 +283,28 @@ const sendMailPayment = async () => {
             class="text-center"
           >
             Đã hủy
+          </div>
+        </template>
+        <template #[`action-data`]="{ row }">
+          <div class="flex gap-1 justify-center">
+            <UTooltip text="Chi tiết phiếu chi">
+              <UButton
+                :ui="{ rounded: 'rounded-full' }"
+                icon="i-heroicons-eye-20-solid"
+                @click="redirectToPaySlipDetail(row)"
+              />
+            </UTooltip>
+            <UTooltip
+              v-if="row.status === 1"
+              text="Duyệt phiếu chi"
+            >
+              <UButton
+                :ui="{ rounded: 'rounded-full' }"
+                color="green"
+                icon="i-heroicons-check-20-solid"
+                @click="onOpenApprovePaySlipModal(row)"
+              />
+            </UTooltip>
           </div>
         </template>
         <template #empty-state>
@@ -316,5 +357,51 @@ const sendMailPayment = async () => {
         </template>
       </UCard>
     </UModal>
+    <!-- modal xác nhận duyệt phiếu chi -->
+    <UModal
+      v-model="isOpenApprovePaySlipModal"
+      :ui="{ container: 'items-start sm:items-start' }"
+      prevent-close
+    >
+      <UCard
+        :ui="{
+          ring: '',
+          divide: 'divide-y divide-gray-100 dark:divide-gray-800'
+        }"
+      >
+        <template #header>
+          <div class="flex justify-between">
+            <h3 class="font-bold text-2xl">
+              Duyệt phiếu chi
+            </h3>
+            <UButton
+              class="-my-1"
+              color="gray"
+              icon="i-heroicons-x-mark-20-solid"
+              variant="ghost"
+              @click="isOpenApprovePaySlipModal = false"
+            />
+          </div>
+        </template>
+        <p>Bạn có chắc chắn muốn duyệt phiếu chi <strong>{{ selectedPaySlipCode }}</strong> không ?</p>
+        <template #footer>
+          <div class="flex gap-2 justify-end">
+            <UButton
+              :ui="{ padding: { sm: 'px-5 py-2' } }"
+              color="primary"
+              label="Đồng ý"
+              @click="onApprovePaySlip"
+            />
+            <UButton
+              :ui="{ padding: { sm: 'px-5 py-2' } }"
+              color="red"
+              label="Thoát"
+              @click="isOpenApprovePaySlipModal = false"
+            />
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+    <!---->
   </UDashboardPage>
 </template>

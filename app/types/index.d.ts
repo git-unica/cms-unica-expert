@@ -237,6 +237,7 @@ export interface PaySlipDetail {
   _id: string
   payment_slip_id: string
   user_id: string
+  community_id: string
   total_money_aff: number
   total_money_owner: number
   total_money: number
