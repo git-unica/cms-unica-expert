@@ -16,11 +16,13 @@ export const ECommunityOrderPaymentStatus = {
 export const ECommunityOrderType = {
   MEMBERSHIP: 1,
   COURSE: 2,
-  EVENT: 3
+  EVENT: 3,
+  PRODUCT: 4
 } as const
 
 export const CommunityOrderTypeText = new Map([
   [ECommunityOrderType.MEMBERSHIP, 'membership'],
   [ECommunityOrderType.COURSE, 'course'],
-  [ECommunityOrderType.EVENT, 'event']
+  [ECommunityOrderType.EVENT, 'event'],
+  [ECommunityOrderType.PRODUCT, 'product']
 ])

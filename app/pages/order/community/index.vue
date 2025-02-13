@@ -520,7 +520,7 @@ const canHandldeReceipt = computed(() => {
         sort-mode="manual"
       >
         <template #buyer_info-data="{ row }">
-          <div v-if="row.type === ECommunityOrderType.MEMBERSHIP || row.type === ECommunityOrderType.COURSE || !row.type">
+          <div v-if="row.type === ECommunityOrderType.MEMBERSHIP || row.type === ECommunityOrderType.COURSE || row.type === ECommunityOrderType.PRODUCT || !row.type">
             <div v-if="Object.keys(row.buyer_info).length > 0">
               <p class="text-[#6B7280] font-bold">
                 {{ row.buyer_info.full_name ? row.buyer_info.full_name : '' }}
@@ -594,6 +594,9 @@ const canHandldeReceipt = computed(() => {
           <div v-if="row.type === ECommunityOrderType.EVENT">
             <p class="font-bold">Sự kiện</p>
             <span class="text-xs">{{ row.event_info ? row.event_info.name : '' }}</span>
+          </div>
+          <div v-if="row.type === ECommunityOrderType.PRODUCT">
+            <p class="font-bold">Sản phẩm</p>
           </div>
         </template>
         <template #period-data="{ row }">
