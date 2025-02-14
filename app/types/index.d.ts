@@ -5,7 +5,7 @@ import type { EStatusPost } from '~/enums/status-post.enum'
 import type { OrderStatus } from '~/enums/order-status.enum'
 import type { SSEType } from '~/enums/sse-type.enum'
 import type { PaySlipStatus } from '~/enums/pay-slip.enum'
-import {PaySlipDetailStatus} from "~/enums/pay-slip-detail.enum";
+import type { PaySlipDetailStatus } from '~/enums/pay-slip-detail.enum'
 
 export interface User {
   _id: string

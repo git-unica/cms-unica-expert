@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   extends: [process.env.NUXT_UI_PRO_PATH || '@nuxt/ui-pro'],
+
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
@@ -12,6 +13,7 @@ export default defineNuxtConfig({
     '@nuxt/image',
     'nuxt-lodash'
   ],
+
   runtimeConfig: {
     public: {
       frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -19,22 +21,28 @@ export default defineNuxtConfig({
       domain: process.env.NUXT_DOMAIN || 'localhost'
     }
   },
+
   ui: {
     icons: ['heroicons', 'simple-icons'],
     safelistColors: ['primary', 'red', 'orange', 'green']
   },
+
   colorMode: {
     disableTransition: true
   },
+
   devtools: {
     enabled: true
   },
+
   typescript: {
     strict: false
   },
+
   future: {
     compatibilityVersion: 4
   },
+
   eslint: {
     config: {
       stylistic: {
@@ -43,10 +51,13 @@ export default defineNuxtConfig({
       }
     }
   },
+
   dayjs: {
     locales: ['vi'],
     plugins: ['relativeTime', 'utc', 'timezone'],
     defaultLocale: 'vi',
     defaultTimezone: 'Asia/Ho_Chi_Minh'
-  }
+  },
+
+  compatibilityDate: '2025-02-13'
 })
