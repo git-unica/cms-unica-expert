@@ -6,7 +6,7 @@ import {
   CommunityOrderTypeText,
   ECommunityOrderPaymentStatus,
   ECommunityOrderStatus,
-  ECommunityOrderType
+  ECommunityOrderType, ProductTypeText
 } from '~/enums/community-order.enum'
 import type { FormSubmitEvent } from '#ui/types'
 import { ERole } from '~/enums/role.enum'
@@ -79,7 +79,9 @@ const state = reactive({
   short_payment_link: orderDetailData.value.short_payment_link,
   note: orderDetailData.value.note ? orderDetailData.value.note : '',
   ref: orderDetailData.value.ref,
-  sale: orderDetailData.value.sale
+  sale: orderDetailData.value.sale,
+  products: orderDetailData.value.products,
+  product_detail: orderDetailData.value.productDetail
 })
 
 watchEffect(() => {
@@ -326,6 +328,18 @@ const isEditRevenue = ref(false)
 const onEditRevenue = () => {
   isEditRevenue.value = !isEditRevenue.value
 }
+
+const productColumns = [
+  { key: 'stt', label: 'STT' },
+  {
+    key: 'type',
+    label: 'Loại sản phẩm'
+  }, {
+    key: 'name',
+    label: 'Tên sản phẩm'
+  },
+  { key: 'price', label: 'Giá sản phẩm' }
+]
 </script>
 
 <template>
@@ -628,6 +642,29 @@ const onEditRevenue = () => {
           <!--        <UFormGroup v-if="orderDetailData.status === ECommunityOrderStatus.Cancel" label="Lý do hủy đơn" name="cancel_reason"> -->
           <!--          <UTextarea v-model="state.cancel_reason" disabled  :rows="4" /> -->
           <!--        </UFormGroup> -->
+        </div>
+        <div class="w-[50%]">
+          <UTable
+            :columns="productColumns"
+            :rows="state.product_detail || []"
+            :ui="{ divide: 'divide-gray-200 dark:divide-gray-800' }"
+            class="w-full"
+            sort-mode="manual"
+          >
+            <template #stt-data="{ index }">
+              {{ index + 1 }}
+            </template>
+            <template #type-data="{ row }">
+              {{ ProductTypeText.get(row.type) }}
+            </template>
+            <template #name-data="{ row, index }">
+              {{ state.products[index].quantity }} x
+              {{ row.name }}
+            </template>
+            <template #price-data="{ index }">
+              {{ numeral(state.products[index].price).format() + ' VND' }}
+            </template>
+          </UTable>
         </div>
         <UFormGroup
           class="px-4 py-4"

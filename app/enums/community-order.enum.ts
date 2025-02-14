@@ -20,6 +20,16 @@ export const ECommunityOrderType = {
   PRODUCT: 4
 } as const
 
+export const EProductType = {
+  Physical: 1,
+  Digital: 2
+}
+
+export const ProductTypeText = new Map([
+  [EProductType.Physical, 'vật lý'],
+  [EProductType.Digital, 'số']
+])
+
 export const CommunityOrderTypeText = new Map([
   [ECommunityOrderType.MEMBERSHIP, 'membership'],
   [ECommunityOrderType.COURSE, 'course'],
