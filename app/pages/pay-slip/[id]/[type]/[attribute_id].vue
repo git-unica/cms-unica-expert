@@ -70,6 +70,11 @@ const defaultAffColumns = [
     class: 'text-center'
   },
   {
+    key: 'money_product',
+    label: 'Sản phẩm',
+    class: 'text-center'
+  },
+  {
     key: 'total_money_need_paid',
     label: 'Tổng tiền',
     class: 'text-center'
@@ -164,6 +169,11 @@ const defaultOwnerColumns = [
     class: 'text-center'
   },
   {
+    key: 'money_product_order',
+    label: 'Sản phẩm',
+    class: 'text-center'
+  },
+  {
     key: 'total_money_need_paid',
     label: 'Tổng tiền',
     class: 'text-center'
@@ -241,6 +251,11 @@ if (!Object.keys(numeral.locales).includes('vn')) {
               {{ row.money_event ? numeral(row.money_event).format() : '-' }}
             </div>
           </template>
+          <template #money_product-data="{ row }">
+            <div class="text-center">
+              {{ row.money_product ? numeral(row.money_product).format() : '-' }}
+            </div>
+          </template>
           <template #total_money_need_paid-data="{ row }">
             <div class="text-center">
               {{ row.total_money_need_paid ? numeral(row.total_money_need_paid).format() : '-' }}
@@ -295,6 +310,11 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           <template #money_event_order-data="{ row }">
             <div class="text-center">
               {{ row.money_event_order ? numeral(row.money_event_order).format() : '-' }}
+            </div>
+          </template>
+          <template #money_product_order-data="{ row }">
+            <div class="text-center">
+              {{ row.money_product_order ? numeral(row.money_product_order).format() : '-' }}
             </div>
           </template>
           <template #total_money_need_paid-data="{ row }">

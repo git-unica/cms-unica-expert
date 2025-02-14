@@ -512,7 +512,10 @@ const onAgreeChooseSale = async () => {
         </template>
         <template #[`action-data`]="{ row }">
           <div class="flex gap-1">
-            <UTooltip text="Gán sale">
+            <UTooltip
+              v-if="(user.roles?.includes(ERole.Admin) || user.roles?.includes(ERole.Support)) && !user.roles?.includes(ERole.Sale)"
+              text="Gán sale"
+            >
               <UButton
                 :ui="{ rounded: 'rounded-full' }"
                 icon="i-heroicons-user-plus"
