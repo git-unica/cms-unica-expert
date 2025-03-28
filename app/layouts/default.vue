@@ -96,6 +96,16 @@ const links = [{
     shortcuts: ['G', 'P']
   }
 }, {
+  id: 'subscription',
+  label: 'Đăng ký định kỳ',
+  icon: 'i-heroicons-clipboard-document',
+  to: '/subscription',
+  roles: [ERole.Admin, ERole.Sale, ERole.Support],
+  tooltip: {
+    text: 'Đăng ký định kỳ',
+    shortcuts: ['G', 'S']
+  }
+}, {
   id: 'settings',
   label: 'Settings',
   to: '/settings',
