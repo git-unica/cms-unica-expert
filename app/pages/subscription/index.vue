@@ -493,12 +493,6 @@ if (!Object.keys(numeral.locales).includes('vn')) {
           >
             Đã hủy
           </span>
-          <span
-            v-if="row.status === OrderStatus.Removed"
-            class="text-red-500"
-          >
-            Đã xóa
-          </span>
         </template>
         <template #empty-state>
           <div class="flex flex-col items-center justify-center py-6 gap-3">
